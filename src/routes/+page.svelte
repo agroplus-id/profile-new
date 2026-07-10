@@ -138,9 +138,49 @@
 
 		<nav class="nav-links" aria-label="Main navigation">
 			<a href="#home">Home</a>
-			<a href="#projects">Projects</a>
-			<a href="#about">About us</a>
-			<a href="#tools">Tools</a>
+			<div class="nav-item">
+				<a class="nav-trigger" href="#projects">Projects</a>
+				<div class="mega-menu projects-menu">
+					<a class="mega-card" href="#tools">
+						<strong>AgroCapture</strong>
+						<span>Seeing every coffee field differently</span>
+						<i>›</i>
+					</a>
+					<a class="mega-card" href="#tools">
+						<strong>Ferroir</strong>
+						<span>Connected fermentation, thoughtfully designed</span>
+						<i>›</i>
+					</a>
+					<a class="mega-card" href="#tools">
+						<strong>Fermego</strong>
+						<span>Modern monitoring for familiar fermentation.</span>
+						<i>›</i>
+					</a>
+				</div>
+			</div>
+			<div class="nav-item">
+				<a class="nav-trigger" href="#about">About us</a>
+				<div class="mega-menu about-menu">
+					<a class="mega-card" href="#about">
+						<strong>Team</strong>
+						<i>›</i>
+					</a>
+					<a class="mega-card" href="#about">
+						<strong>Roadmap</strong>
+						<i>›</i>
+					</a>
+					<div class="mega-card mega-empty" aria-hidden="true"></div>
+				</div>
+			</div>
+			<div class="nav-item tools-item">
+				<a class="nav-trigger" href="#tools">Tools</a>
+				<div class="tools-menu">
+					<a href="#tools">Supply Verication</a>
+					<a href="#tools">Coffee Supply Maps</a>
+					<a href="#tools">Species Checker</a>
+					<a href="#tools">Coffee Identity Research</a>
+				</div>
+			</div>
 		</nav>
 
 		<a class="nav-cta" href="#contact">Contact Us</a>
@@ -432,10 +472,148 @@
 
 	.nav-links {
 		display: flex;
+		align-items: center;
 		justify-content: center;
 		gap: clamp(20px, 3.2vw, 48px);
 		font-size: clamp(0.9rem, 1.15vw, 1.5rem);
 		font-weight: 600;
+	}
+
+	.nav-links > a,
+	.nav-trigger {
+		display: inline-flex;
+		align-items: center;
+		min-height: 38px;
+		padding: 0 8px;
+	}
+
+	.nav-item {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+	}
+
+	.nav-item:hover .nav-trigger,
+	.nav-item:focus-within .nav-trigger {
+		background: #d8e4c6;
+		color: #45552d;
+	}
+
+	.mega-menu,
+	.tools-menu {
+		position: absolute;
+		top: calc(100% + 22px);
+		z-index: 30;
+		opacity: 0;
+		visibility: hidden;
+		pointer-events: none;
+		transform: translateY(-8px);
+		transition:
+			opacity 160ms ease,
+			transform 160ms ease,
+			visibility 160ms ease;
+	}
+
+	.nav-item:hover .mega-menu,
+	.nav-item:focus-within .mega-menu,
+	.nav-item:hover .tools-menu,
+	.nav-item:focus-within .tools-menu {
+		opacity: 1;
+		visibility: visible;
+		pointer-events: auto;
+		transform: translateY(0);
+	}
+
+	.mega-menu {
+		position: fixed;
+		top: 100px;
+		left: 50%;
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		width: min(1512px, calc(100vw - 56px));
+		min-height: 170px;
+		overflow: hidden;
+		border: 1px solid rgba(37, 51, 15, 0.35);
+		border-radius: 0 0 28px 28px;
+		background: rgba(240, 243, 241, 0.98);
+		box-shadow: 0 22px 34px rgba(0, 0, 0, 0.2);
+		transform: translate(-50%, -8px);
+		backdrop-filter: blur(16px);
+	}
+
+	.nav-item:hover .mega-menu,
+	.nav-item:focus-within .mega-menu {
+		transform: translate(-50%, 0);
+	}
+
+	.mega-card {
+		display: grid;
+		align-content: start;
+		gap: 18px;
+		min-height: 170px;
+		padding: 46px clamp(34px, 4.4vw, 70px) 34px;
+		border-right: 1px solid rgba(37, 51, 15, 0.35);
+		color: #45552d;
+		font-size: 0.9rem;
+		line-height: 1.05;
+	}
+
+	.mega-card:last-child {
+		border-right: 0;
+	}
+
+	.mega-card strong {
+		color: #45552d;
+		font-size: clamp(1.15rem, 1.75vw, 1.9rem);
+		line-height: 1;
+	}
+
+	.mega-card span {
+		max-width: 280px;
+		color: #25330f;
+		font-size: clamp(0.82rem, 1vw, 1.05rem);
+		font-weight: 700;
+	}
+
+	.mega-card i {
+		display: grid;
+		place-items: center;
+		width: 28px;
+		height: 28px;
+		margin-top: 8px;
+		border: 1px solid #c9d7b7;
+		color: #849962;
+		font-style: normal;
+		font-size: 1.25rem;
+		line-height: 1;
+	}
+
+	.mega-empty {
+		pointer-events: none;
+	}
+
+	.tools-menu {
+		left: 50%;
+		right: auto;
+		display: grid;
+		gap: 24px;
+		width: min(380px, calc(100vw - 48px));
+		padding: 38px 42px 36px;
+		border: 1px solid rgba(37, 51, 15, 0.18);
+		border-radius: 0 0 28px 28px;
+		background: rgba(240, 243, 241, 0.98);
+		box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
+		color: #45552d;
+		font-size: clamp(1rem, 1.35vw, 1.55rem);
+		font-weight: 800;
+		line-height: 1.05;
+		transform: translate(-50%, -8px);
+		backdrop-filter: blur(16px);
+	}
+
+	.tools-item:hover .tools-menu,
+	.tools-item:focus-within .tools-menu {
+		transform: translate(-50%, 0);
 	}
 
 	.nav-cta,
@@ -1151,6 +1329,22 @@
 			justify-content: flex-start;
 			overflow-x: auto;
 			padding-bottom: 4px;
+		}
+
+		.nav-item {
+			position: static;
+			flex: 0 0 auto;
+		}
+
+		.nav-item:hover .nav-trigger,
+		.nav-item:focus-within .nav-trigger {
+			background: transparent;
+			color: inherit;
+		}
+
+		.mega-menu,
+		.tools-menu {
+			display: none;
 		}
 
 		.hero {
