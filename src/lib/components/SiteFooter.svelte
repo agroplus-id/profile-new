@@ -1,0 +1,8 @@
+<script lang="ts">
+	import logo from '$lib/assets/images/group-1233621.svg';
+	import instagram from '$lib/assets/images/instagram0.png';
+	import linkedin from '$lib/assets/images/linked-in-20.png';
+</script>
+
+<section class="signup-section" aria-labelledby="signup-title"><h2 id="signup-title">Sign up<br />for updates</h2><form class="signup-form"><label for="email">Email</label><div><input id="email" type="email" placeholder="Enter your email" /><button type="submit">Sign up</button></div><p>By subscribing you agree to our Privacy Policy and provide consent to receive updates from Agroplus.</p></form></section>
+<footer class="footer" id="contact"><div class="footer-contact"><h2>Contact</h2><p>Jl. MT. Haryono No.169,<br />Malang, East Java 65145<br />Indonesia</p><a href="mailto:inquiries@agroplusid.com">inquiries@agroplusid.com</a><img src={logo} alt="AgroPlus.ID" /><div class="legal-links"><a href="/">Privacy Police</a><a href="/">Terms of Use</a></div></div><div class="footer-links"><div><h2>Product</h2><a href="#tools">Ferroir</a><a href="#tools">Fermego</a><a href="#tools">Agro-Capture</a></div><div><h2>About Agroplus</h2><a href="#about">Team</a><a href="#about">Roadmap</a><a href="#contact">Contact</a><a href="/">Media Assets</a><a href="/">Suppliers</a></div></div><div class="socials"><img src={linkedin} alt="LinkedIn" /><img src={instagram} alt="Instagram" /><span>© 2025 AgroPlus.ID, Inc. All rights reserved.</span></div></footer>
