@@ -4,6 +4,7 @@
 	import device from '$lib/assets/images/desktop10/fermego.png';
 	import circle from '$lib/assets/images/desktop 9/circle.svg';
 	import dotSvg from '$lib/assets/images/desktop 9/dot.svg';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 
 	type Hotspot = {
 		id: string;
@@ -60,12 +61,12 @@
 </script>
 
 <section class="specs-stage" aria-label="Fermego product specifications">
-	<div class="specs-meta">
+	<div use:fadeUp={{ y: 20 }} class="specs-meta">
 		<p>Fermego</p>
 		<strong>Launching 2026</strong>
 	</div>
 
-	<div class="specs-table" aria-label="Fermego specifications">
+	<div use:fadeUp={{ y: 20, delay: 0.05 }} class="specs-table" aria-label="Fermego specifications">
 		{#each fermegoSpecs as [label, value]}
 			<div><span>{label} :</span><strong>{value}</strong></div>
 		{/each}
@@ -78,7 +79,7 @@
 	<img class="specs-circle" src={circle} alt="" aria-hidden="true" />
 
 	<div class="device-container">
-		<img class="specs-device" src={device} alt="Fermego fermentation monitor" />
+		<img use:fadeScale class="specs-device" src={device} alt="Fermego fermentation monitor" />
 
 		<!-- Interactive Hotspot Dots -->
 		{#each hotspots as hs}
@@ -122,7 +123,7 @@
 		{/if}
 	</div>
 
-	<p class="specs-tagline">Smarter Fermentation<br />Starts Here.</p>
+	<p use:fadeUp={{ delay: 0.1 }} class="specs-tagline">Smarter Fermentation<br />Starts Here.</p>
 </section>
 
 <style>

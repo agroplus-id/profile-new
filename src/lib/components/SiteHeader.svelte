@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { slideDown, magneticHover } from '$lib/motion';
 	import logo from '$lib/assets/images/group-1233620.svg';
 
 	let open = $state<string | null>(null);
@@ -14,7 +15,7 @@
 
 <svelte:window onclick={(e) => { if (!(e.target as Element).closest('.nav-item')) close(); }} />
 
-<header class="nav">
+<header class="nav" use:slideDown={{ duration: 0.65 }}>
 	<a class="brand" href="/" aria-label="AgroPlus.ID home"><img src={logo} alt="AgroPlus.ID" /></a>
 	<nav class="nav-links" aria-label="Main navigation">
 		<a href="/">Home</a>
@@ -44,7 +45,7 @@
 			</div>
 		</div>
 	</nav>
-	<a class="nav-cta" href="/#contact">Contact Us</a>
+	<a use:magneticHover class="nav-cta" href="/#contact">Contact Us</a>
 </header>
 
 <style>
@@ -57,6 +58,11 @@
 		padding: 0 8px;
 		min-height: 38px;
 		color: inherit;
+		transition: color 0.2s ease, transform 0.2s ease;
+	}
+
+	.nav-trigger:hover {
+		transform: translateY(-1px);
 	}
 
 	.nav-item .mega-menu,
@@ -64,7 +70,8 @@
 		opacity: 0;
 		visibility: hidden;
 		pointer-events: none;
-		transform: translate(-50%, -8px);
+		transform: translate(-50%, -12px) scale(0.98);
+		transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s ease;
 	}
 
 	.nav-item.is-open .mega-menu,
@@ -72,14 +79,14 @@
 		opacity: 1;
 		visibility: visible;
 		pointer-events: auto;
-		transform: translate(-50%, 0);
+		transform: translate(-50%, 0) scale(1);
 	}
 
 	.tools-item .tools-menu {
-		transform: translate(-50%, -8px);
+		transform: translate(-50%, -12px) scale(0.98);
 	}
 
 	.tools-item.is-open .tools-menu {
-		transform: translate(-50%, 0);
+		transform: translate(-50%, 0) scale(1);
 	}
 </style>
