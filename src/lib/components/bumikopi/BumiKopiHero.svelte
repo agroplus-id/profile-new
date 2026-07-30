@@ -1,15 +1,16 @@
 <script lang="ts">
+	import { fadeUp, fadeScale } from '$lib/motion';
 	import { bumiKopiImages } from '$lib/data/bumikopi';
 </script>
 
 <section class="bumikopi-hero" aria-label="Bumi Kopi package preview">
-	<div class="hero-img-wrap">
+	<div class="hero-img-wrap" use:fadeScale={{ duration: 0.7 }}>
 		<img src={bumiKopiImages.header} alt="Bumi Kopi Liberica package" />
 	</div>
 </section>
 
 <section class="introduction" aria-labelledby="bumikopi-title">
-	<div class="intro-heading">
+	<div class="intro-heading" use:fadeUp={{ duration: 0.75 }}>
 		<h1 id="bumikopi-title">Bumi Kopi</h1>
 		<div class="tagline">
 			<h2>Meet the<br />Efforts Behind<br />Your Package.</h2>
@@ -20,7 +21,7 @@
 	<i class="plus plus-left" aria-hidden="true">+</i>
 	<i class="plus plus-right" aria-hidden="true">+</i>
 
-	<div class="intro-copy-wrap">
+	<div class="intro-copy-wrap" use:fadeUp={{ delay: 0.25, duration: 0.85 }}>
 		<p class="intro-copy">
 			Long before it reaches your cup, this Liberica coffee begins in the volcanic highlands of Wonosalam, East Java. Since the Dutch colonial era, generations of local growers have preserved its legacy. Today, through curiosity and innovation, they continue uncovering new expressions of Liberica while honoring the character that has defined it for generations.
 		</p>
