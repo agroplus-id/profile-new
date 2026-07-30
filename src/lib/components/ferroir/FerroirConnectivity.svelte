@@ -1,5 +1,5 @@
 <script lang="ts">
-	import phone from '$lib/assets/images/desktop 9/digital.svg';
+	import phone from "$lib/assets/images/desktop 9/digital.svg";
 </script>
 
 <section class="connectivity">
@@ -23,7 +23,10 @@
 		</div>
 
 		<div class="phone-card">
-			<img src={phone} alt="Ferroir mobile app showing connected devices" />
+			<img
+				src={phone}
+				alt="Ferroir mobile app showing connected devices"
+			/>
 		</div>
 	</div>
 </section>
@@ -43,10 +46,22 @@
 		pointer-events: none;
 	}
 
-	.tl { top: clamp(14px, 2.5vw, 36px); left: clamp(18px, 3vw, 44px); }
-	.tr { top: clamp(14px, 2.5vw, 36px); right: clamp(18px, 3vw, 44px); }
-	.bl { bottom: clamp(14px, 2.5vw, 36px); left: clamp(18px, 3vw, 44px); }
-	.br { bottom: clamp(14px, 2.5vw, 36px); right: clamp(18px, 3vw, 44px); }
+	.tl {
+		top: clamp(14px, 2.5vw, 36px);
+		left: clamp(18px, 3vw, 44px);
+	}
+	.tr {
+		top: clamp(14px, 2.5vw, 36px);
+		right: clamp(18px, 3vw, 44px);
+	}
+	.bl {
+		bottom: clamp(14px, 2.5vw, 36px);
+		left: clamp(18px, 3vw, 44px);
+	}
+	.br {
+		bottom: clamp(14px, 2.5vw, 36px);
+		right: clamp(18px, 3vw, 44px);
+	}
 
 	.connectivity-grid {
 		display: grid;
@@ -124,8 +139,15 @@
 	}
 
 	@media (max-width: 760px) {
-		.connectivity-grid { grid-template-columns: 1fr; }
-		.copy-card { min-height: auto; }
-		.phone-card { min-height: 320px; height: auto; }
+		.connectivity-grid {
+			grid-template-columns: 1fr;
+		}
+		.copy-card {
+			min-height: auto;
+		}
+		.phone-card {
+			min-height: 320px;
+			height: auto;
+		}
 	}
 </style>

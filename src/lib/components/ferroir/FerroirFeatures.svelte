@@ -1,6 +1,6 @@
 <script lang="ts">
-	import { ferroirFeatures } from '$lib/data/ferroir';
-	import ferroirWordmark from '$lib/assets/images/desktop 9/ferroir.svg';
+	import { ferroirFeatures } from "$lib/data/ferroir";
+	import ferroirWordmark from "$lib/assets/images/desktop 9/ferroir.svg";
 </script>
 
 <section class="features" aria-labelledby="meet-title">
@@ -79,8 +79,13 @@
 		grid-template-columns: 2fr 1fr;
 	}
 
-	article.reverse .feature-img { grid-column: 1; grid-row: 1; }
-	article.reverse .feature-copy { grid-column: 2; }
+	article.reverse .feature-img {
+		grid-column: 1;
+		grid-row: 1;
+	}
+	article.reverse .feature-copy {
+		grid-column: 2;
+	}
 
 	.feature-copy {
 		display: flex;
@@ -136,20 +141,42 @@
 	}
 
 	@media (max-width: 760px) {
-		.features-inner { padding-inline: 16px; }
-		article, article.reverse { grid-template-columns: 1fr 1.5fr; min-height: 200px; }
-		article.reverse .feature-img { grid-column: 2; grid-row: 1; }
-		article.reverse .feature-copy { grid-column: 1; }
-		h3 { font-size: clamp(1.05rem, 5.2vw, 1.6rem); }
+		.features-inner {
+			padding-inline: 16px;
+		}
+		article,
+		article.reverse {
+			grid-template-columns: 1fr 1.5fr;
+			min-height: 200px;
+		}
+		article.reverse .feature-img {
+			grid-column: 2;
+			grid-row: 1;
+		}
+		article.reverse .feature-copy {
+			grid-column: 1;
+		}
+		h3 {
+			font-size: clamp(1.05rem, 5.2vw, 1.6rem);
+		}
 	}
 
 	@media (max-width: 520px) {
-		article, article.reverse {
+		article,
+		article.reverse {
 			grid-template-columns: 1fr;
 			grid-template-rows: auto auto;
 		}
-		article.reverse .feature-img { grid-column: 1; grid-row: 2; }
-		article.reverse .feature-copy { grid-column: 1; grid-row: 1; }
-		.feature-img { min-height: 200px; }
+		article.reverse .feature-img {
+			grid-column: 1;
+			grid-row: 2;
+		}
+		article.reverse .feature-copy {
+			grid-column: 1;
+			grid-row: 1;
+		}
+		.feature-img {
+			min-height: 200px;
+		}
 	}
 </style>
