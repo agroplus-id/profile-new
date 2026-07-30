@@ -1,13 +1,14 @@
 <script lang="ts">
 	import background from '$lib/assets/images/desktop 9/background.svg';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="ferroir-hero">
-	<img src={background} alt="Ferroir fermentation system" />
+	<img use:fadeScale src={background} alt="Ferroir fermentation system" />
 </section>
 
 <section class="introduction" aria-labelledby="ferroir-title">
-	<div class="intro-heading">
+	<div use:fadeUp class="intro-heading">
 		<h1 id="ferroir-title">FERROIR</h1>
 		<p class="tagline">Connected<br />fermentation,<br />thoughtfully<br />designed.</p>
 	</div>
@@ -15,7 +16,7 @@
 	<i class="plus plus-left" aria-hidden="true">+</i>
 	<i class="plus plus-right" aria-hidden="true">+</i>
 
-	<p class="intro-copy">FERROIR, targeted to launch in 2027, is an integrated precision fermentation system, purpose-built for the upstream coffee industry.</p>
+	<p use:fadeUp={{ delay: 0.15 }} class="intro-copy">FERROIR, targeted to launch in 2027, is an integrated precision fermentation system, purpose-built for the upstream coffee industry.</p>
 
 	<i class="plus plus-bottom-left" aria-hidden="true">+</i>
 	<i class="plus plus-bottom-right" aria-hidden="true">+</i>

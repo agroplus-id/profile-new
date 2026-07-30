@@ -1,6 +1,7 @@
 <script lang="ts">
 	import connectivity from '$lib/assets/images/desktop10/connectivity.svg';
 	import plus from '$lib/assets/images/desktop10/group-1234980.svg';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="connectivity" aria-labelledby="connectivity-title">
@@ -10,7 +11,7 @@
 	<img class="plus br" src={plus} alt="" aria-hidden="true" />
 
 	<div class="connectivity-grid">
-		<div class="copy-card">
+		<div use:fadeUp class="copy-card">
 			<div>
 				<h2 id="connectivity-title">Digital Connectivity</h2>
 				<p class="sub">Mobile app &amp; website</p>
@@ -22,7 +23,7 @@
 				<li>Product Passport</li>
 			</ul>
 		</div>
-		<div class="visual-card"><img src={connectivity} alt="Fermego mobile app showing connected devices" /></div>
+		<div use:fadeScale class="visual-card"><img src={connectivity} alt="Fermego mobile app showing connected devices" /></div>
 	</div>
 </section>
 

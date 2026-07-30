@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { fermegoFeatures } from '$lib/data/fermego';
 	import logo from '$lib/assets/images/desktop10/fermego_logo.png';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="features" aria-labelledby="meet-fermego-title">
 	<div class="features-inner">
-		<h2 id="meet-fermego-title">
+		<h2 use:fadeUp id="meet-fermego-title">
 			<em>Meet</em>
 			<img src={logo} alt="FERMEGO" />
 		</h2>
 
-		<div class="feature-grid">
+		<div use:staggerUp class="feature-grid">
 			{#each fermegoFeatures as feature, index}
 				<article class:reverse={index % 2 === 1}>
 					<div class="feature-copy">
