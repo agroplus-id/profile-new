@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { leadershipTeam, advisors, teamMembers, type TeamMember } from '$lib/data/team';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="team-section" aria-label="Our Team Members">
@@ -9,8 +10,8 @@
 	<div class="team-container">
 		<!-- Leadership Team -->
 		<div class="team-group">
-			<h2 class="group-title">Leadership Team</h2>
-			<div class="members-grid">
+			<h2 use:fadeUp class="group-title">Leadership Team</h2>
+			<div use:staggerUp class="members-grid">
 				{#each leadershipTeam as member}
 					<div class="member-card">
 						<div class="photo-box">
@@ -45,8 +46,8 @@
 
 		<!-- Advisors -->
 		<div class="team-group">
-			<h2 class="group-title">Advisors</h2>
-			<div class="members-grid">
+			<h2 use:fadeUp class="group-title">Advisors</h2>
+			<div use:staggerUp class="members-grid">
 				{#each advisors as member}
 					<div class="member-card">
 						<div class="photo-box">
@@ -88,8 +89,8 @@
 
 		<!-- Team -->
 		<div class="team-group">
-			<h2 class="group-title">Team</h2>
-			<div class="members-grid">
+			<h2 use:fadeUp class="group-title">Team</h2>
+			<div use:staggerUp class="members-grid">
 				{#each teamMembers as member}
 					<div class="member-card">
 						<div class="photo-box">

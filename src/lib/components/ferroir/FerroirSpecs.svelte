@@ -11,6 +11,7 @@
 	import imgSensor from '$lib/assets/images/desktop 9/gambar5.svg';
 	import imgReactor from '$lib/assets/images/desktop 9/gambar2.svg';
 	import imgAeration from '$lib/assets/images/desktop 9/6.svg';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 
 	type Hotspot = {
 		id: string;
@@ -90,12 +91,12 @@
 </script>
 
 <section class="specs-stage" aria-label="Ferroir product specifications">
-	<div class="specs-meta">
+	<div use:fadeUp={{ y: 20 }} class="specs-meta">
 		<p>Ferroir-V2</p>
 		<strong>Launching 2027</strong>
 	</div>
 
-	<div class="specs-table" aria-label="Ferroir specifications">
+	<div use:fadeUp={{ y: 20, delay: 0.05 }} class="specs-table" aria-label="Ferroir specifications">
 		{#each ferroirSpecs as [label, value]}
 			<div><span>{label} :</span><strong>{value}</strong></div>
 		{/each}
@@ -108,7 +109,7 @@
 	<img class="specs-circle" src={circle} alt="" aria-hidden="true" />
 
 	<div class="device-container">
-		<img class="specs-device" src={device} alt="Ferroir V2 fermentation kit" />
+		<img use:fadeScale class="specs-device" src={device} alt="Ferroir V2 fermentation kit" />
 
 		<!-- Interactive Hotspot Dots -->
 		{#each hotspots as hs}
@@ -152,7 +153,7 @@
 		{/if}
 	</div>
 
-	<p class="specs-tagline">The Next-Gen Fermentation<br />Kit for Beginners</p>
+	<p use:fadeUp={{ delay: 0.1 }} class="specs-tagline">The Next-Gen Fermentation<br />Kit for Beginners</p>
 </section>
 
 <style>
