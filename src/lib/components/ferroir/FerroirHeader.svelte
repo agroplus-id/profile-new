@@ -1,5 +1,7 @@
-<script lang="ts">import logo from '$lib/assets/images/desktop 9/group-1233620.svg';</script>
-<header class="ferroir-nav">
+<script lang="ts">import logo from '$lib/assets/images/desktop 9/group-1233620.svg';
+import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
+</script>
+<header use:slideDown class="ferroir-nav">
 	<a href="/" aria-label="AgroPlus home"><img src={logo} alt="AgroPlus.ID" /></a>
 	<nav aria-label="Main navigation">
 		<a href="/">Home</a>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import phone from "$lib/assets/images/desktop 9/digital.svg";
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="connectivity">
@@ -9,7 +10,7 @@
 	<div class="corner br" aria-hidden="true">+</div>
 
 	<div class="connectivity-grid">
-		<div class="copy-card" aria-labelledby="connectivity-title">
+		<div use:fadeUp class="copy-card" aria-labelledby="connectivity-title">
 			<div class="copy-top">
 				<h2 id="connectivity-title">Digital Connectivity</h2>
 				<p class="sub">Mobile app &amp; website</p>
@@ -22,7 +23,7 @@
 			</ul>
 		</div>
 
-		<div class="phone-card">
+		<div use:fadeScale class="phone-card">
 			<img
 				src={phone}
 				alt="Ferroir mobile app showing connected devices"
