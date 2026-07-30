@@ -1,16 +1,17 @@
 <script lang="ts">
 	import { agroCaptureFeatures } from '$lib/data/agrocapture';
 	import wordmark from '$lib/assets/images/desktop 11/image-960.png';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="features" aria-labelledby="meet-agro-title">
 	<div class="features-inner">
-		<h2 id="meet-agro-title">
+		<h2 use:fadeUp id="meet-agro-title">
 			<em>Meet</em>
 			<img src={wordmark} alt="AgroCapture" />
 		</h2>
 
-		<div class="feature-grid">
+		<div use:staggerUp class="feature-grid">
 			{#each agroCaptureFeatures as feature, index}
 				<article class:reverse={index % 2 === 1}>
 					<div class="feature-copy">

@@ -3,15 +3,16 @@
 	import titleBg from '$lib/assets/images/desktop 11/agro-capture1.svg';
 	import device from '$lib/assets/images/desktop 11/agrocapture.svg';
 	import circle from '$lib/assets/images/desktop 9/circle.svg';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="specs-stage" aria-label="AgroCapture product specifications">
-	<div class="specs-meta">
+	<div use:fadeUp={{ y: 20 }} class="specs-meta">
 		<p>AgroCapture</p>
 		<strong>Launching 2026</strong>
 	</div>
 
-	<div class="specs-table" aria-label="AgroCapture specifications">
+	<div use:fadeUp={{ y: 20, delay: 0.05 }} class="specs-table" aria-label="AgroCapture specifications">
 		{#each agroCaptureSpecs as [label, value]}
 			<div><span>{label} :</span><strong>{value}</strong></div>
 		{/each}
@@ -22,9 +23,9 @@
 	</div>
 
 	<img class="specs-circle" src={circle} alt="" aria-hidden="true" />
-	<img class="specs-device" src={device} alt="AgroCapture mobile app" />
+	<img use:fadeScale class="specs-device" src={device} alt="AgroCapture mobile app" />
 
-	<p class="specs-tagline">Better Coffee Begins<br />with Better Insights.</p>
+	<p use:fadeUp={{ delay: 0.1 }} class="specs-tagline">Better Coffee Begins<br />with Better Insights.</p>
 </section>
 
 <style>

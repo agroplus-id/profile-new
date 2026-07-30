@@ -2,14 +2,15 @@
 	import header from '$lib/assets/images/desktop 11/header.svg';
 	import wordmark from '$lib/assets/images/desktop 11/agro-capture1.svg';
 	import plus from '$lib/assets/images/desktop 11/plus.svg';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
 </script>
 
 <section class="agrocapture-hero" aria-label="AgroCapture app preview">
-	<img src={header} alt="AgroCapture app interface" />
+	<img use:fadeScale src={header} alt="AgroCapture app interface" />
 </section>
 
 <section class="introduction" aria-labelledby="agrocapture-title">
-	<div class="intro-heading">
+	<div use:fadeUp class="intro-heading">
 		<img id="agrocapture-title" class="wordmark" src={wordmark} alt="AgroCapture" />
 		<p>Seeing every coffee<br />field differently.</p>
 	</div>
@@ -17,7 +18,7 @@
 	<img class="plus plus-left" src={plus} alt="" aria-hidden="true" />
 	<img class="plus plus-right" src={plus} alt="" aria-hidden="true" />
 
-	<p class="intro-copy">AgroCapture, launching in 2026, is a digital coffee intelligence platform built for farm mapping, crop analysis, and harvest records.</p>
+	<p use:fadeUp={{ delay: 0.15 }} class="intro-copy">AgroCapture, launching in 2026, is a digital coffee intelligence platform built for farm mapping, crop analysis, and harvest records.</p>
 
 	<img class="plus plus-bottom-left" src={plus} alt="" aria-hidden="true" />
 	<img class="plus plus-bottom-right" src={plus} alt="" aria-hidden="true" />
