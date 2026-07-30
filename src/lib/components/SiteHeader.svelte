@@ -29,7 +29,7 @@
 		<div class="nav-item" class:is-open={open === 'about'}>
 			<button class="nav-trigger" onclick={() => toggle('about')} aria-expanded={open === 'about'}>About us</button>
 			<div class="mega-menu about-menu">
-				<a class="mega-card" href="/#about" onclick={close}><strong>Team</strong><i>›</i></a>
+				<a class="mega-card" href="/team" onclick={close}><strong>Team</strong><i>›</i></a>
 				<a class="mega-card" href="/#about" onclick={close}><strong>Roadmap</strong><i>›</i></a>
 				<div class="mega-card mega-empty" aria-hidden="true"></div>
 			</div>
