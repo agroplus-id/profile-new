@@ -224,7 +224,7 @@
 		box-shadow: 0 8px 14px rgba(37, 51, 15, 0.22);
 	}
 
-	.hero {
+	#home.hero {
 		position: relative;
 		min-height: min(882px, calc(100svh - 100px));
 		background: #030403;
@@ -827,22 +827,47 @@
 		clip: rect(0 0 0 0);
 	}
 
-	.signup-form div {
+	.signup-form .signup-input-btn {
 		display: flex;
+		align-items: center;
+		justify-content: space-between;
 		gap: 16px;
-		padding: 18px;
+		padding: 14px 18px;
 		border-radius: 14px;
 		background: #ffffff;
 		box-shadow: 0 16px 28px rgba(37, 51, 15, 0.14);
+		text-decoration: none;
+		cursor: pointer;
+		transition: transform 0.2s ease, box-shadow 0.2s ease;
 	}
 
-	.signup-form input {
-		min-width: 0;
-		flex: 1;
-		border: 0;
-		outline: none;
-		color: #25330f;
+	.signup-form .signup-input-btn:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 20px 36px rgba(37, 51, 15, 0.18);
+	}
+
+	.signup-form .signup-input-btn span:first-child {
+		color: #556345;
 		font-weight: 700;
+		font-size: 1rem;
+	}
+
+	.signup-form .signup-badge {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-height: 50px;
+		padding: 0 28px;
+		border-radius: 8px;
+		background: #25330f;
+		color: #f0f3f1;
+		font-weight: 700;
+		box-shadow: 0 8px 14px rgba(37, 51, 15, 0.22);
+		transition: background-color 0.2s ease;
+	}
+
+	.signup-form .signup-input-btn:hover .signup-badge {
+		background: #3a4d1a;
 	}
 
 	.signup-form p {
@@ -1192,11 +1217,12 @@
 			grid-template-columns: 1fr;
 		}
 
-		.signup-form div {
+		.signup-form .signup-input-btn {
 			flex-direction: column;
+			align-items: stretch;
 		}
 
-		.signup-form button {
+		.signup-form .signup-badge {
 			width: 100%;
 		}
 
