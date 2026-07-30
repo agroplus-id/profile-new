@@ -68,14 +68,13 @@
 
 	article {
 		display: grid;
-		grid-template-columns: 1fr 1.85fr;
+		grid-template-columns: 1fr 1.6fr;
 		align-items: stretch;
 		gap: clamp(16px, 2vw, 28px);
-		min-height: clamp(320px, 36vw, 460px);
 	}
 
 	article.reverse {
-		grid-template-columns: 1.85fr 1fr;
+		grid-template-columns: 1.6fr 1fr;
 	}
 
 	article.reverse .feature-img {
@@ -129,12 +128,8 @@
 	.feature-img {
 		position: relative;
 		overflow: hidden;
-		background: #d6ded2;
 		border-radius: clamp(16px, 1.8vw, 24px);
 		height: 100%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
 	}
 
 	.feature-img img {
@@ -143,6 +138,7 @@
 		height: 100%;
 		object-fit: cover;
 		object-position: center;
+		border-radius: clamp(16px, 1.8vw, 24px);
 	}
 
 	@media (max-width: 760px) {
