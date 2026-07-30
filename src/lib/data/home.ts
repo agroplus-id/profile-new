@@ -1,7 +1,7 @@
-import agroCaptureTitle from '$lib/assets/images/agro-capture1.svg';
+import agroCaptureTitle from '$lib/assets/images/desktop 11/agro-capture1.svg';
 import agroCaptureImage from '$lib/assets/images/i-phone-13-pro0.png';
 import fermegoImage from '$lib/assets/images/_8-bcd-8-b-63-7-ad-7-431-c-87-ce-882-a-48-a-88-eee-10.png';
-import fermegoTitle from '$lib/assets/images/fermego1.svg';
+import fermegoTitle from '$lib/assets/images/desktop10/fermego1.svg';
 import ferroirImage from '$lib/assets/images/_673257-ea-35-e-3-416-e-ae-0-c-c-4254710-b-3-ca-20.png';
 import ferroirTitle from '$lib/assets/images/ferroir-v-20.svg';
 import embassyLogo from '$lib/assets/images/kedutaan-besar-inggris-di-jakarta-02-1-10.png';
@@ -10,7 +10,6 @@ import partnersLogo from '$lib/assets/images/images-100.png';
 import partnerOneLogo from '$lib/assets/images/images-1-30.png';
 import partnerTwoLogo from '$lib/assets/images/images-2-30.png';
 import techHubLogo from '$lib/assets/images/uk-indonesia-tech-hub-20.png';
-import embassySecondaryLogo from '$lib/assets/images/kedutaan-besar-inggris-di-jakarta-02-1-20.png';
 
 export type Product = {
 	name: string;
@@ -63,5 +62,5 @@ export const pressItems = Array.from({ length: 3 }, () => ({
 }));
 
 export const partnerLogos = [
-	embassyLogo, partnersLogo, partnerOneLogo, instellarLogo, partnerTwoLogo, techHubLogo, embassySecondaryLogo
+	embassyLogo, partnersLogo, partnerOneLogo, instellarLogo, partnerTwoLogo, techHubLogo, embassyLogo
 ];
