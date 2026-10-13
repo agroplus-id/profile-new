@@ -1,0 +1,366 @@
+/* Dashboard admin — tema terang, hijau AgroPlus, bernuansa aplikasi */
+.adm {
+	--bg: #f1f4ee;
+	--surface: #ffffff;
+	--ink: #1b2610;
+	--muted: #6c7a5a;
+	--brand: #55683d;
+	--accent: #849962;
+	--lime: #c9dc7b;
+	--line: rgba(37, 51, 15, 0.09);
+	--danger: #b3261e;
+	--radius: 20px;
+	--shadow: 0 1px 2px rgba(27, 38, 16, 0.04), 0 12px 32px rgba(27, 38, 16, 0.06);
+	--ease: cubic-bezier(0.22, 1, 0.36, 1);
+	min-height: 100vh;
+	background: var(--bg);
+	color: var(--ink);
+	font-family: Poppins, Inter, system-ui, sans-serif;
+	-webkit-font-smoothing: antialiased;
+}
+
+.adm *,
+.adm *::before,
+.adm *::after {
+	box-sizing: border-box;
+}
+
+.adm h1,
+.adm h2,
+.adm h3,
+.adm p {
+	margin: 0;
+}
+
+/* ───── Kartu ───── */
+.adm-card {
+	background: var(--surface);
+	border: 1px solid var(--line);
+	border-radius: var(--radius);
+	padding: 22px;
+	box-shadow: var(--shadow);
+}
+
+.adm-card-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.adm-card-head h2 {
+	font-size: 1.02rem;
+	font-weight: 600;
+	letter-spacing: -0.01em;
+}
+
+/* ───── Judul halaman ───── */
+.adm-page-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 24px;
+}
+
+.adm-page-head h1 {
+	font-size: clamp(1.5rem, 2.4vw, 1.9rem);
+	font-weight: 700;
+	letter-spacing: -0.03em;
+}
+
+.adm-page-head p {
+	margin-top: 4px;
+	color: var(--muted);
+	font-size: 0.9rem;
+}
+
+/* ───── Tombol ───── */
+.adm-btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	min-height: 42px;
+	padding: 0 18px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: var(--surface);
+	color: var(--ink);
+	font: inherit;
+	font-size: 0.88rem;
+	font-weight: 500;
+	cursor: pointer;
+	transition:
+		transform 0.25s var(--ease),
+		background-color 0.25s var(--ease),
+		box-shadow 0.25s var(--ease),
+		border-color 0.25s var(--ease);
+}
+
+.adm-btn:hover {
+	border-color: rgba(37, 51, 15, 0.22);
+	transform: translateY(-1px);
+}
+
+.adm-btn.primary {
+	border-color: transparent;
+	background: linear-gradient(160deg, #62784a, #45552d);
+	color: #fff;
+	box-shadow: 0 8px 18px rgba(69, 85, 45, 0.28);
+}
+
+.adm-btn.primary:hover {
+	box-shadow: 0 12px 24px rgba(69, 85, 45, 0.36);
+}
+
+.adm-btn.danger {
+	color: var(--danger);
+}
+
+.adm-btn.sm {
+	min-height: 34px;
+	padding: 0 12px;
+	border-radius: 10px;
+	font-size: 0.8rem;
+}
+
+.adm-btn.icon {
+	width: 38px;
+	min-height: 38px;
+	padding: 0;
+}
+
+.adm-btn:disabled {
+	opacity: 0.55;
+	cursor: wait;
+	transform: none;
+}
+
+.adm-btn:focus-visible,
+.adm-input:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+
+/* ───── Form ───── */
+.adm-field {
+	display: grid;
+	gap: 6px;
+	font-size: 0.8rem;
+	font-weight: 500;
+	color: var(--muted);
+}
+
+.adm-input {
+	width: 100%;
+	min-height: 44px;
+	padding: 10px 14px;
+	border: 1px solid var(--line);
+	border-radius: 12px;
+	background: #f8faf6;
+	color: var(--ink);
+	font: inherit;
+	font-size: 0.92rem;
+	transition:
+		border-color 0.25s var(--ease),
+		background-color 0.25s var(--ease),
+		box-shadow 0.25s var(--ease);
+}
+
+.adm-input:focus {
+	border-color: var(--accent);
+	background: #fff;
+	box-shadow: 0 0 0 4px rgba(132, 153, 98, 0.16);
+	outline: none;
+}
+
+textarea.adm-input {
+	min-height: 96px;
+	resize: vertical;
+	line-height: 1.5;
+}
+
+.adm-form-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+	gap: 14px;
+}
+
+.adm-form-grid .wide {
+	grid-column: 1 / -1;
+}
+
+/* ───── Badge ───── */
+.adm-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 10px;
+	border-radius: 999px;
+	background: #e8eedc;
+	color: var(--brand);
+	font-size: 0.72rem;
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.adm-badge::before {
+	content: '';
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: currentColor;
+}
+
+.adm-badge.amber {
+	background: #fbefd5;
+	color: #94620a;
+}
+.adm-badge.blue {
+	background: #e0ecf8;
+	color: #2a5f94;
+}
+.adm-badge.gray {
+	background: #ecefe9;
+	color: #6c7a5a;
+}
+
+/* ───── Tabel / daftar ───── */
+.adm-table-wrap {
+	overflow-x: auto;
+	margin: 0 -6px;
+}
+
+.adm-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.88rem;
+}
+
+.adm-table th {
+	padding: 10px 14px;
+	color: var(--muted);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.06em;
+	text-align: left;
+	text-transform: uppercase;
+	white-space: nowrap;
+}
+
+.adm-table td {
+	padding: 14px;
+	border-top: 1px solid var(--line);
+	vertical-align: middle;
+}
+
+.adm-table tr:hover td {
+	background: #f8faf5;
+}
+
+.adm-empty {
+	display: grid;
+	place-items: center;
+	gap: 8px;
+	padding: 40px 16px;
+	color: var(--muted);
+	text-align: center;
+	font-size: 0.9rem;
+}
+
+/* ───── Modal / panel samping ───── */
+.adm-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 60;
+	display: flex;
+	justify-content: flex-end;
+	background: rgba(20, 28, 12, 0.42);
+	backdrop-filter: blur(3px);
+	animation: adm-fade 0.3s var(--ease);
+}
+
+.adm-drawer {
+	width: min(520px, 100%);
+	height: 100%;
+	overflow-y: auto;
+	padding: 26px;
+	background: var(--surface);
+	box-shadow: -24px 0 60px rgba(20, 28, 12, 0.2);
+	animation: adm-slide 0.45s var(--ease);
+}
+
+.adm-drawer-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 22px;
+}
+
+.adm-drawer-head h2 {
+	font-size: 1.2rem;
+	font-weight: 700;
+	letter-spacing: -0.02em;
+}
+
+@keyframes adm-fade {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes adm-slide {
+	from {
+		transform: translateX(40px);
+		opacity: 0;
+	}
+}
+
+@keyframes adm-rise {
+	from {
+		opacity: 0;
+		transform: translateY(14px);
+	}
+}
+
+.adm-rise {
+	animation: adm-rise 0.6s var(--ease) both;
+	animation-delay: calc(var(--i, 0) * 60ms);
+}
+
+/* ───── Toast ───── */
+.adm-toast {
+	position: fixed;
+	left: 50%;
+	bottom: 28px;
+	z-index: 300;
+	translate: -50% 0;
+	padding: 12px 20px;
+	border-radius: 14px;
+	background: #1b2610;
+	color: #fff;
+	font-size: 0.88rem;
+	box-shadow: 0 18px 40px rgba(20, 28, 12, 0.35);
+	animation: adm-rise 0.4s var(--ease);
+}
+
+.adm-toast.error {
+	background: var(--danger);
+}
+
+@media (max-width: 900px) {
+	.adm-toast {
+		bottom: 92px;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.adm *,
+	.adm *::before {
+		animation: none !important;
+		transition: none !important;
+	}
+}

@@ -1,10 +1,98 @@
 <script lang="ts">
 	import { bumiKopiImages } from '$lib/data/bumikopi';
+	import type { Batch } from '$lib/batch';
+	import OriginMap from './OriginMap.svelte';
+
+	// Tanpa data batch: tampilkan grafis paspor bawaan. Dengan data batch: kartu paspor dari data admin.
+	let { batch, images = {} }: { batch?: Batch; images?: Record<string, string> } = $props();
+
+	const photos = $derived(
+		(batch?.placePhotos ?? [])
+			.map((p, i) => ({ src: images[`place_${i}`], caption: p.caption }))
+			.filter((p): p is { src: string; caption: string } => !!p.src)
+	);
+	const hasMap = $derived(batch?.mapLat != null && batch?.mapLng != null);
 </script>
 
 <section class="passport-section" aria-label="Coffee Passport card">
 	<div class="passport-inner">
-		<img src={bumiKopiImages.passportGraphic} alt="Coffee Passport AP-26-0001867" />
+		{#if batch}
+			<article class="passport" aria-label="Coffee Passport {batch.passportNumber}">
+				<header>
+					<div>
+						<h2>Coffee<br />Passport</h2>
+						<p class="tag">Verified. Traceable. Trusted.</p>
+					</div>
+					{#if batch.passportNumber}
+						<div class="num">
+							<span>Passport number</span>
+							<strong>{batch.passportNumber}</strong>
+						</div>
+					{/if}
+				</header>
+
+				<div class="body" class:with-photo={!!images.passport}>
+					{#if images.passport}
+						<div class="photo">
+							<img src={images.passport} alt="{batch.productName} beans" />
+							<svg class="stamp" viewBox="0 0 200 200" aria-hidden="true">
+								<defs><path id="arc" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0" /></defs>
+								<circle cx="100" cy="100" r="94" fill="none" stroke="currentColor" stroke-width="6" />
+								<circle cx="100" cy="100" r="58" fill="none" stroke="currentColor" stroke-width="3" />
+								<text font-size="19" font-weight="800" letter-spacing="4" fill="currentColor"><textPath href="#arc" startOffset="2%">VERIFIED ORIGIN · AGROPLUS ·</textPath></text>
+								<text x="100" y="108" text-anchor="middle" font-size="16" font-weight="800" fill="currentColor">COFFEEID</text>
+							</svg>
+						</div>
+					{/if}
+
+					<dl>
+						<div>
+							<dt>Species &amp; Variety</dt>
+							<dd>{batch.species || '—'}</dd>
+						</div>
+						<div>
+							<dt>Lot number</dt>
+							<dd>{batch.lotNumber || '—'}</dd>
+						</div>
+						<div>
+							<dt>Farm</dt>
+							<dd>{batch.farm || '—'}<small>{batch.farmLocation}</small></dd>
+						</div>
+						<div>
+							<dt>Altitude</dt>
+							<dd>{batch.altitude || '—'}</dd>
+						</div>
+						<div>
+							<dt>Processed by</dt>
+							<dd>{batch.processor || '—'}<small>{batch.processorLocation}</small></dd>
+						</div>
+						<div>
+							<dt>Origin</dt>
+							<dd>{batch.origin || '—'}<small>{batch.originCountry}</small></dd>
+						</div>
+					</dl>
+				</div>
+
+				{#if hasMap}
+					<div class="map-wrap">
+						<OriginMap
+							lat={batch.mapLat as number}
+							lng={batch.mapLng as number}
+							place={batch.mapPlace || batch.origin || 'Origin'}
+							note={batch.mapNote}
+							{photos}
+						/>
+					</div>
+				{/if}
+
+				<footer>
+					<span>In Great Coffee We Trust.</span>
+					<span>Agroplus Coffee Passport</span>
+				</footer>
+			</article>
+		{:else}
+			<img src={bumiKopiImages.passportGraphic} alt="Coffee Passport AP-26-0001867" />
+		{/if}
 	</div>
 </section>
 
@@ -20,9 +108,164 @@
 		margin: 0 auto;
 	}
 
-	.passport-inner img {
+	.passport-inner > img {
 		display: block;
 		width: 100%;
 		height: auto;
+	}
+
+	.passport {
+		padding: clamp(24px, 3.5vw, 48px);
+		border: 1px solid rgba(69, 85, 45, 0.25);
+		border-radius: clamp(14px, 1.6vw, 24px);
+		background: #fff;
+		color: #45552d;
+	}
+
+	header {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 20px;
+		padding-bottom: clamp(20px, 3vw, 36px);
+		border-bottom: 1px solid rgba(69, 85, 45, 0.2);
+	}
+
+	h2 {
+		margin: 0;
+		color: #849962;
+		font-size: clamp(1.8rem, 3.2vw, 3rem);
+		font-weight: 800;
+		line-height: 0.95;
+		letter-spacing: -0.03em;
+	}
+
+	.tag {
+		margin: 10px 0 0;
+		font-size: 0.8rem;
+		font-style: italic;
+		font-weight: 600;
+	}
+
+	.num {
+		display: grid;
+		gap: 2px;
+	}
+
+	.num span {
+		font-size: 0.66rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.num strong {
+		color: #849962;
+		font-size: clamp(1rem, 1.5vw, 1.4rem);
+	}
+
+	.body {
+		display: grid;
+		gap: clamp(20px, 3vw, 40px);
+		padding-top: clamp(8px, 1.5vw, 16px);
+	}
+
+	.body.with-photo {
+		grid-template-columns: minmax(180px, 280px) 1fr;
+		align-items: start;
+	}
+
+	.photo {
+		position: relative;
+		margin-top: clamp(12px, 2vw, 22px);
+		aspect-ratio: 3 / 4;
+		border: 1px solid rgba(69, 85, 45, 0.25);
+		border-radius: 18px;
+		padding: 10px;
+	}
+
+	.photo img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		border-radius: 12px;
+		object-fit: cover;
+	}
+
+	.stamp {
+		position: absolute;
+		left: -14%;
+		bottom: -14%;
+		width: 62%;
+		color: #1f4a22;
+		opacity: 0.92;
+		transform: rotate(-12deg);
+		filter: drop-shadow(0 2px 3px rgba(31, 74, 34, 0.25));
+	}
+
+	dl {
+		display: grid;
+		grid-template-columns: repeat(2, 1fr);
+		gap: 0 clamp(24px, 4vw, 56px);
+		margin: 0;
+	}
+
+	dl > div {
+		padding: clamp(14px, 2vw, 22px) 0;
+		border-bottom: 1px solid rgba(69, 85, 45, 0.15);
+	}
+
+	dt {
+		margin-bottom: 6px;
+		font-size: 0.66rem;
+		font-weight: 700;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	dd {
+		margin: 0;
+		color: #849962;
+		font-size: clamp(1.05rem, 1.7vw, 1.6rem);
+		font-weight: 800;
+		line-height: 1.15;
+	}
+
+	dd small {
+		display: block;
+		margin-top: 3px;
+		color: #25330f;
+		font-size: 0.72rem;
+		font-weight: 500;
+	}
+
+	.map-wrap {
+		margin-top: clamp(20px, 3vw, 36px);
+	}
+
+	footer {
+		display: flex;
+		justify-content: space-between;
+		gap: 12px;
+		padding-top: clamp(16px, 2vw, 24px);
+		font-size: 0.7rem;
+		font-style: italic;
+	}
+
+	@media (max-width: 760px) {
+		.body.with-photo {
+			grid-template-columns: 1fr;
+		}
+
+		.photo {
+			max-width: 260px;
+		}
+	}
+
+	@media (max-width: 640px) {
+		dl {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

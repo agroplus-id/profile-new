@@ -5,13 +5,11 @@ import lavender from '$lib/assets/images/desktop 13/lavender.svg';
 import strawberry from '$lib/assets/images/desktop 13/strawbery.svg';
 import mango from '$lib/assets/images/desktop 13/mango.svg';
 import stevia from '$lib/assets/images/desktop 13/stevia.svg';
-import brewing from '$lib/assets/images/desktop 13/brewing.svg';
 
 export const bumiKopiImages = {
 	header,
 	coffeePhoto,
-	passportGraphic,
-	brewing
+	passportGraphic
 };
 
 export const flavorNotes = [

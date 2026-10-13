@@ -1,12 +1,12 @@
 <script lang="ts">
 	import header from '$lib/assets/images/desktop10/fix.svg';
 	import logo from '$lib/assets/images/desktop10/fermego1.svg';
-	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop, scrollZoom, scrollReveal } from '$lib/motion';
 </script>
 
-<section class="fermego-hero" aria-label="Fermego hero">
+<section class="fermego-hero" aria-label="Fermego hero" use:scrollZoom>
 	<div use:fadeScale class="hero-img-wrap">
-		<img src={header} alt="Fermego fermentation monitor" />
+		<img class="zoom-media" src={header} alt="Fermego fermentation monitor" />
 	</div>
 </section>
 
@@ -19,7 +19,7 @@
 	<i class="plus plus-left" aria-hidden="true">+</i>
 	<i class="plus plus-right" aria-hidden="true">+</i>
 
-	<p use:fadeUp={{ delay: 0.15 }} class="intro-copy">FERMEGO, launching in 2026, is a modular fermentation monitoring kit that transforms conventional fermentation into connected systems.</p>
+	<p use:scrollReveal class="intro-copy">FERMEGO, launching in 2026, is a modular fermentation monitoring kit that transforms conventional fermentation into connected systems.</p>
 
 	<i class="plus plus-bottom-left" aria-hidden="true">+</i>
 	<i class="plus plus-bottom-right" aria-hidden="true">+</i>

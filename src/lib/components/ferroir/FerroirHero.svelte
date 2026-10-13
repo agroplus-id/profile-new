@@ -1,10 +1,12 @@
 <script lang="ts">
 	import background from '$lib/assets/images/desktop 9/background.svg';
-	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop, scrollZoom, scrollReveal } from '$lib/motion';
 </script>
 
-<section class="ferroir-hero">
-	<img use:fadeScale src={background} alt="Ferroir fermentation system" />
+<section class="ferroir-hero" use:scrollZoom>
+	<div class="zoom-media">
+		<img use:fadeScale src={background} alt="Ferroir fermentation system" />
+	</div>
 </section>
 
 <section class="introduction" aria-labelledby="ferroir-title">
@@ -16,7 +18,7 @@
 	<i class="plus plus-left" aria-hidden="true">+</i>
 	<i class="plus plus-right" aria-hidden="true">+</i>
 
-	<p use:fadeUp={{ delay: 0.15 }} class="intro-copy">FERROIR, targeted to launch in 2027, is an integrated precision fermentation system, purpose-built for the upstream coffee industry.</p>
+	<p use:scrollReveal class="intro-copy">FERROIR, targeted to launch in 2027, is an integrated precision fermentation system, purpose-built for the upstream coffee industry.</p>
 
 	<i class="plus plus-bottom-left" aria-hidden="true">+</i>
 	<i class="plus plus-bottom-right" aria-hidden="true">+</i>
@@ -28,7 +30,7 @@
 		background: #202520;
 	}
 
-	.ferroir-hero > img {
+	.ferroir-hero .zoom-media > img {
 		display: block;
 		width: 100%;
 		height: auto;
@@ -93,7 +95,7 @@
 	}
 
 	@media (max-width: 760px) {
-		.ferroir-hero > img {
+		.ferroir-hero .zoom-media > img {
 			min-height: 250px;
 			object-position: center;
 		}

@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Daftar email admin. Tambah email lain di dalam list bila perlu.
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['agroplusindonesia@gmail.com'];
+    }
+
+    // Konten publik: boleh dibaca siapa saja, hanya admin yang boleh mengubah.
+    match /team/{id}     { allow read: if true; allow write: if isAdmin(); }
+    match /updates/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /press/{id}    { allow read: if true; allow write: if isAdmin(); }
+    match /partners/{id} { allow read: if true; allow write: if isAdmin(); }
+
+    // Gambar batch (hero, foto pendukung, paspor, foto lokasi): dibaca satu per satu; ubah hanya admin.
+    match /batchImages/{id} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    // Penghitung nomor paspor (hanya admin).
+    match /counters/{id} { allow read, write: if isAdmin(); }
+
+    // Pesanan CoffeeID: pelanggan hanya bisa mengambil SATU dokumen bila tahu kode pesanannya
+    // (kode = ID dokumen). Daftar lengkap dan semua perubahan hanya untuk admin.
+    // Batch kopi: dibaca satu per satu lewat kode batch dari data pesanan; daftar & ubah hanya admin.
+    match /batches/{code} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+
+    match /orders/{code} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+  }
+}

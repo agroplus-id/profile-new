@@ -1,52 +1,59 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Swal from 'sweetalert2';
+	import { doc, getDoc } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
+	import { normalizeCode } from '$lib/admin/orders';
+	import { VERIFIED_KEY } from '$lib/batch';
 
 	let orderCode = $state('');
 	let email = $state('');
 	let phone = $state('');
 	let isSubmitting = $state(false);
 
-	const VALID_ORDER_CODE = 'AGP-190626-LBC67WNS67';
-	const VALID_EMAIL = 'gabriels@student.ub.ac.id';
-	const VALID_PHONE = '08987107687';
-
-	function handleSubmit(e: SubmitEvent) {
+	async function handleSubmit(e: SubmitEvent) {
 		e.preventDefault();
 		isSubmitting = true;
 
-		setTimeout(() => {
-			isSubmitting = false;
-
-			const inputOrder = orderCode.trim();
-			const inputEmail = email.trim().toLowerCase();
-			const inputPhone = phone.trim();
-
-			if (
-				inputOrder === VALID_ORDER_CODE &&
-				inputEmail === VALID_EMAIL &&
-				inputPhone === VALID_PHONE
-			) {
-				Swal.fire({
-					icon: 'success',
-					title: 'Verification Successful!',
-					text: 'Redirecting to Bumi Kopi Passport...',
-					timer: 1400,
-					showConfirmButton: false,
-					confirmButtonColor: '#55683d'
-				}).then(() => {
-					goto('/bumi-kopi');
-				});
-			} else {
-				Swal.fire({
-					icon: 'error',
-					title: 'Data Tidak Ditemukan',
-					text: 'Kode pesanan, email, atau nomor telepon yang Anda masukkan salah. Silakan periksa kembali data Anda!',
-					confirmButtonText: 'Coba Lagi',
-					confirmButtonColor: '#55683d'
-				});
+		let ok = false;
+		try {
+			// Kode pesanan = ID dokumen di koleksi "orders" (diisi admin lewat dashboard).
+			const snap = await getDoc(doc(db, 'orders', normalizeCode(orderCode)));
+			if (snap.exists()) {
+				const o = snap.data() as { email?: string; phone?: string };
+				ok =
+					(o.email ?? '').trim().toLowerCase() === email.trim().toLowerCase() &&
+					(o.phone ?? '').replace(/\D/g, '') === phone.replace(/\D/g, '');
 			}
-		}, 400);
+		} catch (err) {
+			console.warn('Gagal memeriksa pesanan', err);
+		}
+		isSubmitting = false;
+
+		if (ok) {
+			await Swal.fire({
+				icon: 'success',
+				title: 'Verification Successful!',
+				text: 'Opening your coffee passport...',
+				timer: 1400,
+				showConfirmButton: false,
+				confirmButtonColor: '#55683d'
+			});
+			try {
+				sessionStorage.setItem(VERIFIED_KEY, normalizeCode(orderCode));
+			} catch {
+				/* storage tidak tersedia */
+			}
+			goto('/supply-verification/result');
+		} else {
+			Swal.fire({
+				icon: 'error',
+				title: 'Data Tidak Ditemukan',
+				text: 'Kode pesanan, email, atau nomor telepon yang Anda masukkan salah. Silakan periksa kembali data Anda!',
+				confirmButtonText: 'Coba Lagi',
+				confirmButtonColor: '#55683d'
+			});
+		}
 	}
 </script>
 

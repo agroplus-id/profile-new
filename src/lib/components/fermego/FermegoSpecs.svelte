@@ -10,6 +10,7 @@
 		id: string;
 		title: string;
 		description: string;
+		image?: string;
 		top: string;
 		left: string;
 	};
@@ -20,32 +21,32 @@
 			title: 'Low-Calibration Sensor Probe',
 			description:
 				'Designed for dependable long-term operation, the sensor probe minimizes routine calibration while maintaining reliable measurements throughout the fermentation process.',
-			top: '30%',
-			left: '64%'
+			top: '11%',
+			left: '66.5%'
 		},
 		{
 			id: 'sensor-kit',
 			title: 'Plug-and-Play Sensor Kit',
 			description:
 				'Pre-configured sensor modules are designed for quick installation, allowing users to start monitoring fermentation with minimal setup and no complicated wiring.',
-			top: '40%',
-			left: '43%'
+			top: '22%',
+			left: '41%'
 		},
 		{
 			id: 'lcd-panel',
 			title: 'LCD Control Panel',
 			description:
 				'A built-in LCD control panel provides instant access to essential fermentation data, allowing operators to monitor system status directly from the device without relying solely on the mobile application.',
-			top: '33%',
-			left: '48%'
+			top: '31%',
+			left: '19%'
 		},
 		{
 			id: 'mounting-strap',
 			title: 'Adjustable Mounting Strap',
 			description:
 				'An adjustable mounting strap secures Fermego firmly to conventional fermentation tanks, ensuring a stable installation while accommodating different tank dimensions within the supported design.',
-			top: '43%',
-			left: '58%'
+			top: '33%',
+			left: '79%'
 		}
 	];
 
@@ -99,7 +100,13 @@
 		{#if activeHotspotId}
 			{@const activeHs = hotspots.find((h) => h.id === activeHotspotId)}
 			{#if activeHs}
-				<div class="popup-card" role="dialog" aria-labelledby="popup-title">
+				<div
+					class="popup-card"
+					class:flip={parseFloat(activeHs.left) > 60}
+					style="--x: {activeHs.left}; --y: {activeHs.top};"
+					role="dialog"
+					aria-labelledby="popup-title"
+				>
 					<div class="popup-header">
 						<div class="popup-title">
 							<span class="dot-indicator"></span>
@@ -115,7 +122,9 @@
 						</button>
 					</div>
 
-					<div class="popup-preview" aria-hidden="true"></div>
+					<div class="popup-preview" aria-hidden="true">
+						{#if activeHs.image}<img src={activeHs.image} alt="" />{/if}
+					</div>
 
 					<p class="popup-desc">{activeHs.description}</p>
 				</div>
@@ -244,24 +253,61 @@
 		height: 100%;
 	}
 
+	.hotspot-dot::before {
+		content: '';
+		position: absolute;
+		inset: -6px;
+		border: 1px solid rgba(180, 205, 60, 0.9);
+		opacity: 0;
+		animation: dot-pulse 2.4s cubic-bezier(0.62, 0.05, 0.01, 0.99) infinite;
+		pointer-events: none;
+	}
+
+	.hotspot-dot.is-active::before {
+		animation: none;
+		opacity: 0;
+	}
+
+	@keyframes dot-pulse {
+		0% {
+			opacity: 0.9;
+			scale: 0.7;
+		}
+		70%,
+		100% {
+			opacity: 0;
+			scale: 1.6;
+		}
+	}
+
 	.hotspot-dot:hover,
 	.hotspot-dot.is-active {
 		transform: translate(-50%, -50%) scale(1.25);
 		filter: drop-shadow(0 0 8px rgba(212, 230, 81, 0.8));
 	}
 
-	/* Feature Detail Modal Popup Card */
+	/* Kartu detail: berpangkal di titik yang diklik */
 	.popup-card {
 		position: absolute;
-		top: 22%;
-		left: 54%;
+		top: var(--y);
+		left: var(--x);
 		z-index: 30;
-		width: min(340px, 86vw);
-		padding: 14px 16px 18px;
+		width: min(300px, 86vw);
+		padding: 12px 14px 16px;
 		border-radius: 4px;
-		background: #748368;
-		box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
-		animation: popup-fade-in 0.2s ease-out forwards;
+		background: linear-gradient(155deg, #8a9780 0%, #6f7e64 55%, #667559 100%);
+		box-shadow:
+			0 22px 44px rgba(20, 28, 12, 0.3),
+			inset 0 1px 0 rgba(255, 255, 255, 0.18);
+		translate: -13px -13px;
+		transform-origin: 13px 13px;
+		animation: popup-in 0.45s cubic-bezier(0.62, 0.05, 0.01, 0.99) both;
+	}
+
+	/* Titik di sisi kanan: kartu membuka ke kiri agar tidak keluar layar */
+	.popup-card.flip {
+		translate: calc(-100% + 13px) -13px;
+		transform-origin: calc(100% - 13px) 13px;
 	}
 
 	.popup-header {
@@ -316,11 +362,19 @@
 	}
 
 	.popup-preview {
+		overflow: hidden;
 		width: 100%;
 		aspect-ratio: 1.5 / 1;
 		background: #d4d8ce;
 		border-radius: 3px;
 		margin-bottom: 12px;
+	}
+
+	.popup-preview img {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.popup-desc {
@@ -351,14 +405,14 @@
 		}
 	}
 
-	@keyframes popup-fade-in {
+	@keyframes popup-in {
 		from {
 			opacity: 0;
-			transform: translateY(6px) scale(0.96);
+			scale: 0.7;
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0) scale(1);
+			scale: 1;
 		}
 	}
 
@@ -381,10 +435,12 @@
 			transform: translateY(-42px);
 		}
 
-		.popup-card {
+		.popup-card,
+		.popup-card.flip {
 			top: 20%;
 			left: 50%;
-			transform: translateX(-50%);
+			translate: -50% 0;
+			transform-origin: 50% 0;
 		}
 	}
 
@@ -454,11 +510,13 @@
 			line-height: 1.02;
 		}
 
-		.popup-card {
+		.popup-card,
+		.popup-card.flip {
 			position: fixed;
 			top: 50%;
 			left: 50%;
-			transform: translate(-50%, -50%);
+			translate: -50% -50%;
+			transform-origin: 50% 50%;
 			width: 90vw;
 		}
 	}

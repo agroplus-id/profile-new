@@ -1,14 +1,27 @@
 <script lang="ts">
 	import favicon from '$lib/assets/favicon.svg';
 	import '../app.css';
+	import { page } from '$app/state';
 	import SiteHeader from '$lib/components/SiteHeader.svelte';
+	import { initSmoothScroll, destroySmoothScroll } from '$lib/smooth-scroll';
 
 	let { children } = $props();
+
+	// Dashboard admin punya layout sendiri: tanpa navbar publik dan tanpa smooth scroll.
+	const isAdmin = $derived(page.url.pathname.startsWith('/admin'));
+
+	$effect(() => {
+		if (isAdmin) return;
+		initSmoothScroll();
+		return destroySmoothScroll;
+	});
 </script>
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
 </svelte:head>
 
-<SiteHeader />
+{#if !isAdmin}
+	<SiteHeader />
+{/if}
 {@render children()}

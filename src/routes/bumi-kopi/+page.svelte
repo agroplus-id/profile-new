@@ -4,7 +4,6 @@
 	import BumiKopiPassport from '$lib/components/bumikopi/BumiKopiPassport.svelte';
 	import BumiKopiProductionChain from '$lib/components/bumikopi/BumiKopiProductionChain.svelte';
 	import BumiKopiFlavors from '$lib/components/bumikopi/BumiKopiFlavors.svelte';
-	import BumiKopiBrewing from '$lib/components/bumikopi/BumiKopiBrewing.svelte';
 	import BumiKopiBatchDetails from '$lib/components/bumikopi/BumiKopiBatchDetails.svelte';
 	import SiteFooter from '$lib/components/SiteFooter.svelte';
 </script>
@@ -23,7 +22,6 @@
 	<BumiKopiPassport />
 	<BumiKopiProductionChain />
 	<BumiKopiFlavors />
-	<BumiKopiBrewing />
 	<BumiKopiBatchDetails />
 	<SiteFooter />
 </main>

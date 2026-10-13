@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import poster from '$lib/assets/images/image-940.png';
 	import videoSource from '$lib/assets/videos/comprof-landscape.mp4';
-	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
+	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop, scrollZoom, scrollReveal } from '$lib/motion';
 
 	let video = $state<HTMLVideoElement>();
 	let muted = $state(true);
@@ -20,10 +20,10 @@
 	}
 </script>
 
-<section class="team-hero hero" aria-label="The team building AgroPlus">
+<section class="team-hero hero" aria-label="The team building AgroPlus" use:scrollZoom>
 	<video
 		bind:this={video}
-		class="hero-video"
+		class="hero-video zoom-media"
 		autoplay
 		loop
 		muted={muted}
@@ -35,7 +35,7 @@
 	</video>
 	<div class="hero-overlay"></div>
 
-	<div class="hero-content">
+	<div class="hero-content zoom-fade">
 		<h1 use:fadeUp>The team<br />building humanity's<br />coffee upstream<br />industry</h1>
 
 		<button class="video-btn" type="button" onclick={playWithSound} aria-label="Watch full video">
@@ -56,7 +56,7 @@
 	<div class="corner br" aria-hidden="true">+</div>
 
 	<div class="statement-container">
-		<p use:fadeUp class="statement-text">
+		<p use:scrollReveal class="statement-text">
 			AgroPlus is building an integrated ecosystem for the upstream coffee industry with combining
 			computer vision, precision fermentation, and digital verification to help every coffee origin
 			become more measurable, traceable, and trusted.

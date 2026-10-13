@@ -1,17 +1,36 @@
 <script lang="ts">
-	import { fadeUp, fadeScale } from '$lib/motion';
+	import { fadeUp, fadeScale, scrollReveal } from '$lib/motion';
 	import { bumiKopiImages } from '$lib/data/bumikopi';
+	import { onMount } from 'svelte';
+	import { DEFAULT_BATCH, type Batch } from '$lib/batch';
+
+	let { batch = DEFAULT_BATCH, images = {} }: { batch?: Batch; images?: Record<string, string> } = $props();
+
+	let hero = $state<HTMLElement>();
+
+	// Progres scroll 0..1 saat hero terlewati: gambar zoom-in perlahan dan menggelap (sama seperti hero halaman utama).
+	onMount(() => {
+		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		const update = () => {
+			if (!hero) return;
+			const p = Math.min(1, Math.max(0, window.scrollY / (hero.offsetHeight * 0.9)));
+			hero.style.setProperty('--p', p.toFixed(4));
+		};
+		update();
+		window.addEventListener('scroll', update, { passive: true });
+		return () => window.removeEventListener('scroll', update);
+	});
 </script>
 
-<section class="bumikopi-hero" aria-label="Bumi Kopi package preview">
+<section class="bumikopi-hero" aria-label="Bumi Kopi package preview" bind:this={hero}>
 	<div class="hero-img-wrap" use:fadeScale={{ duration: 0.7 }}>
-		<img src={bumiKopiImages.header} alt="Bumi Kopi Liberica package" />
+		<img src={images.hero || batch.heroImage || bumiKopiImages.header} alt="{batch.productName} package" />
 	</div>
 </section>
 
 <section class="introduction" aria-labelledby="bumikopi-title">
 	<div class="intro-heading" use:fadeUp={{ duration: 0.75 }}>
-		<h1 id="bumikopi-title">Bumi Kopi</h1>
+		<h1 id="bumikopi-title">{batch.productName}</h1>
 		<div class="tagline">
 			<h2>Meet the<br />Efforts Behind<br />Your Package.</h2>
 			<p>Every great coffee deserves a story that can be trusted.</p>
@@ -22,8 +41,8 @@
 	<i class="plus plus-right" aria-hidden="true">+</i>
 
 	<div class="intro-copy-wrap" use:fadeUp={{ delay: 0.25, duration: 0.85 }}>
-		<p class="intro-copy">
-			Long before it reaches your cup, this Liberica coffee begins in the volcanic highlands of Wonosalam, East Java. Since the Dutch colonial era, generations of local growers have preserved its legacy. Today, through curiosity and innovation, they continue uncovering new expressions of Liberica while honoring the character that has defined it for generations.
+		<p class="intro-copy" use:scrollReveal>
+			{batch.story}
 		</p>
 		<p class="intro-sub">
 			Verified through the AgroPlus Coffee Passport, preserving every step of its journey, from origin and harvest to fermentation and roasting.
@@ -36,19 +55,39 @@
 
 <style>
 	.bumikopi-hero {
+		--p: 0;
 		overflow: hidden;
 		background: #f0f3f1;
 	}
 
 	.hero-img-wrap {
+		position: relative;
 		display: block;
 		width: 100%;
+		overflow: hidden;
 	}
 
+	/* Menggelap seiring scroll */
+	.hero-img-wrap::after {
+		content: '';
+		position: absolute;
+		inset: 0;
+		background: #030403;
+		opacity: calc(var(--p) * 0.55);
+		pointer-events: none;
+	}
+
+	/* Rasio sama dengan gambar bawaan (1514 x 601); gambar unggahan dipotong mengisi bingkai */
 	.hero-img-wrap img {
 		display: block;
 		width: 100%;
 		height: auto;
+		aspect-ratio: 1514 / 601;
+		object-fit: cover;
+		/* Zoom-in halus mengikuti scroll */
+		transform: scale(calc(1 + var(--p) * 0.22));
+		transform-origin: 50% 45%;
+		will-change: transform;
 	}
 
 	.introduction {

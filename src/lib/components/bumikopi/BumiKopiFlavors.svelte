@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { flavorNotes } from '$lib/data/bumikopi';
+	import { DEFAULT_BATCH, FLAVOR_OPTIONS, type Batch } from '$lib/batch';
+
+	let { batch = DEFAULT_BATCH }: { batch?: Batch } = $props();
+	const flavorNotes = $derived(FLAVOR_OPTIONS.filter((f) => batch.flavors.includes(f.key)));
 </script>
 
 <section class="flavors-section" aria-labelledby="flavors-title">

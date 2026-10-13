@@ -1,6 +1,9 @@
 <script lang="ts">
-	import { productionChainSteps } from "$lib/data/bumikopi";
+	import { DEFAULT_BATCH, type Batch } from "$lib/batch";
 	import kotakkecil from "$lib/assets/images/desktop 13/kotakkecil.svg";
+
+	let { batch = DEFAULT_BATCH }: { batch?: Batch } = $props();
+	const productionChainSteps = $derived(batch.steps);
 
 	let activeStepIndex = $state(0);
 	let sectionElement = $state<HTMLElement | null>(null);

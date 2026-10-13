@@ -1,6 +1,31 @@
 <script lang="ts">
-	import { leadershipTeam, advisors, teamMembers, type TeamMember } from '$lib/data/team';
-	import { fadeUp, staggerUp, slideDown, fadeScale, floatLoop } from '$lib/motion';
+	import { onMount } from 'svelte';
+	import {
+		leadershipTeam as staticLeadership,
+		advisors as staticAdvisors,
+		teamMembers as staticTeam,
+		type TeamMember
+	} from '$lib/data/team';
+	import { fetchTeam, splitByGroup } from '$lib/team-store';
+	import { fadeUp, staggerUp } from '$lib/motion';
+
+	// Tampilkan data statis dulu; ganti dengan data Firestore bila ada.
+	let leadershipTeam = $state<TeamMember[]>(staticLeadership);
+	let advisors = $state<TeamMember[]>(staticAdvisors);
+	let teamMembers = $state<TeamMember[]>(staticTeam);
+
+	onMount(async () => {
+		try {
+			const records = await fetchTeam();
+			if (!records.length) return;
+			const g = splitByGroup(records);
+			leadershipTeam = g.leadership;
+			advisors = g.advisor;
+			teamMembers = g.team;
+		} catch (err) {
+			console.warn('Gagal memuat tim dari Firestore, memakai data statis.', err);
+		}
+	});
 </script>
 
 <section class="team-section" aria-label="Our Team Members">

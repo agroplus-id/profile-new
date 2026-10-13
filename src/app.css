@@ -6,6 +6,20 @@
 		scroll-behavior: smooth;
 	}
 
+	/* Lenis mengatur sendiri scroll-nya; matikan smooth bawaan browser agar tidak bentrok */
+	html.lenis,
+	html.lenis body {
+		height: auto;
+	}
+
+	.lenis.lenis-smooth {
+		scroll-behavior: auto !important;
+	}
+
+	.lenis.lenis-stopped {
+		overflow: clip;
+	}
+
 	body {
 		margin: 0;
 		background: #f0f3f1;
@@ -1374,3 +1388,44 @@
 		background: #ffffff;
 	}
 
+/* Hero: zoom-in halus + menggelap mengikuti scroll (action scrollZoom di motion.ts) */
+.zoom-hero {
+	position: relative;
+	overflow: hidden;
+}
+
+.zoom-hero .zoom-media {
+	transform: scale(calc(1 + var(--p, 0) * 0.22));
+	transform-origin: 50% 45%;
+	will-change: transform;
+}
+
+.zoom-hero::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	background: #030403;
+	opacity: calc(var(--p, 0) * 0.5);
+	pointer-events: none;
+}
+
+.zoom-hero .zoom-fade {
+	transform: translate3d(0, calc(var(--p, 0) * -70px), 0);
+	opacity: calc(1 - var(--p, 0) * 1.35);
+	filter: blur(calc(var(--p, 0) * 12px));
+	will-change: transform, opacity, filter;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.zoom-hero .zoom-media,
+	.zoom-hero .zoom-fade {
+		transform: none;
+		filter: none;
+		opacity: 1;
+	}
+
+	.zoom-hero::after {
+		display: none;
+	}
+}

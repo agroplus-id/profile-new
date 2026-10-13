@@ -1,5 +1,10 @@
 <script lang="ts">
 	import { bumiKopiImages } from '$lib/data/bumikopi';
+	import { DEFAULT_BATCH, type Batch } from '$lib/batch';
+	import { scrollReveal } from '$lib/motion';
+
+	let { batch = DEFAULT_BATCH, images = {} }: { batch?: Batch; images?: Record<string, string> } = $props();
+	const whySrc = $derived(images.why || batch.whyImage || '');
 </script>
 
 <section class="why-verified" aria-labelledby="why-title">
@@ -13,14 +18,18 @@
 				<h2 id="why-title">Why we choose this coffee to be verified ?</h2>
 			</div>
 			<div class="desc-col">
-				<p>
-					We chose to verify this Liberica because its value extends far beyond the cup. Its history, origin, and the generations of growers who have preserved it deserve more than recognition, they deserve a permanent record. Verification helps ensure that every bottle carries the authentic identity of Wonosalam Liberica.
+				<p use:scrollReveal>
+					{batch.whyText}
 				</p>
 			</div>
 		</div>
 
 		<div class="photo-wrap">
-			<img src={bumiKopiImages.coffeePhoto} alt="Coffee cherries being hand-picked in Wonosalam farm" />
+			{#if whySrc}
+				<img class="custom" src={whySrc} alt="{batch.productName} at the farm" />
+			{:else}
+				<img src={bumiKopiImages.coffeePhoto} alt="Coffee cherries being hand-picked in Wonosalam farm" />
+			{/if}
 		</div>
 	</div>
 
@@ -100,6 +109,20 @@
 		height: auto;
 		transform: scale(1.05);
 		transform-origin: center;
+	}
+
+	/* Foto unggahan: bingkai membulat dengan bayangan, meniru gambar bawaan */
+	.photo-wrap img.custom {
+		aspect-ratio: 2.5 / 1;
+		object-fit: cover;
+		border-radius: clamp(28px, 4.5vw, 64px);
+		box-shadow: 0 24px 50px rgba(20, 28, 12, 0.28);
+		transform: none;
+	}
+
+	.photo-wrap:has(img.custom) {
+		padding: 0 0 clamp(16px, 2.5vw, 32px);
+		overflow: visible;
 	}
 
 	@media (max-width: 760px) {

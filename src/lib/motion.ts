@@ -206,3 +206,73 @@ export function pulseGlow(el: HTMLElement, opts: { scale?: number; duration?: nu
 		{ duration, repeat: Infinity, easing: 'ease-in-out' }
 	);
 }
+
+// Svelte action: teks "diketik" mengikuti scroll — kata menyala satu per satu dari redup.
+export function scrollReveal(
+	el: HTMLElement,
+	opts: { dim?: string; lit?: string; start?: number; end?: number } = {}
+) {
+	if (reducedMotion) return;
+	// Warna menyala = warna teks elemen itu sendiri; redup = warna sama dengan transparansi rendah.
+	const computed = getComputedStyle(el).color;
+	const rgb = computed.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).join(', ');
+	const { lit = computed, dim = rgb ? `rgba(${rgb}, 0.22)` : 'rgba(132, 153, 98, 0.22)', start = 0.8, end = 0.45 } = opts;
+
+	const text = el.textContent?.trim() ?? '';
+	const words = text.split(/\s+/);
+	el.setAttribute('aria-label', text);
+	el.textContent = '';
+	const spans = words.map((w, i) => {
+		const s = document.createElement('span');
+		s.textContent = w;
+		s.setAttribute('aria-hidden', 'true');
+		s.style.color = dim;
+		s.style.transition = 'color 0.45s cubic-bezier(0.62, 0.05, 0.01, 0.99)';
+		el.appendChild(s);
+		if (i < words.length - 1) el.appendChild(document.createTextNode(' '));
+		return s;
+	});
+
+	let shown = -1;
+	function update() {
+		const vh = window.innerHeight;
+		const r = el.getBoundingClientRect();
+		const p = Math.min(1, Math.max(0, (vh * start - r.top) / (vh * (start - end) + r.height)));
+		const n = Math.round(p * spans.length);
+		if (n === shown) return;
+		shown = n;
+		spans.forEach((s, i) => (s.style.color = i < n ? lit : dim));
+	}
+	// Satu pembacaan rect per event; DOM hanya disentuh saat jumlah kata menyala berubah.
+	update();
+	window.addEventListener('scroll', update, { passive: true });
+	window.addEventListener('resize', update);
+
+	return {
+		destroy() {
+			window.removeEventListener('scroll', update);
+			window.removeEventListener('resize', update);
+		}
+	};
+}
+
+// Svelte action: hero zoom-in + menggelap saat di-scroll. Pasang di <section> hero; elemen medianya (gambar/video)
+// diberi class "zoom-media", dan isi teks yang ikut memudar diberi class "zoom-fade". Gayanya ada di app.css.
+export function scrollZoom(node: HTMLElement) {
+	node.classList.add('zoom-hero');
+	if (reducedMotion) return;
+	const update = () => {
+		const p = Math.min(1, Math.max(0, window.scrollY / (node.offsetHeight * 0.9)));
+		node.style.setProperty('--p', p.toFixed(4));
+	};
+	update();
+	window.addEventListener('scroll', update, { passive: true });
+	window.addEventListener('resize', update);
+	return {
+		destroy() {
+			window.removeEventListener('scroll', update);
+			window.removeEventListener('resize', update);
+			node.classList.remove('zoom-hero');
+		}
+	};
+}
