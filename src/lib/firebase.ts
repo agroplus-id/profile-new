@@ -1,8 +1,9 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, getApps, getApp, type FirebaseApp } from 'firebase/app';
+import { getFirestore, type Firestore } from 'firebase/firestore';
+import { getAuth, type Auth } from 'firebase/auth';
 
 // Semua konfigurasi dibaca dari env, ganti nilainya di .env (lokal) / Vercel (produksi).
+// Nilai VITE_* ditanam saat build, jadi setelah mengubahnya di Vercel perlu redeploy.
 const firebaseConfig = {
 	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
 	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -12,7 +13,15 @@ const firebaseConfig = {
 	appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
-const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+// Firebase hanya dipakai di browser (semua pemanggilnya berjalan di onMount / handler klik). Di server (SSR) tidak
+// diinisialisasi, supaya halaman tetap bisa dirender walau variabel env belum diisi — sebelumnya getAuth() melempar
+// "auth/invalid-api-key" saat modul dimuat dan seluruh halaman jadi 500.
+let app: FirebaseApp | undefined;
+if (typeof window !== 'undefined' && firebaseConfig.apiKey) {
+	app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+} else if (typeof window !== 'undefined') {
+	console.error('Konfigurasi Firebase kosong: isi VITE_FIREBASE_* di environment lalu build ulang.');
+}
 
-export const db = getFirestore(app);
-export const auth = getAuth(app);
+export const db = (app ? getFirestore(app) : undefined) as unknown as Firestore;
+export const auth = (app ? getAuth(app) : undefined) as unknown as Auth;
