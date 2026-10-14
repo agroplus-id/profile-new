@@ -30,12 +30,20 @@
 	const current = $derived(nav.find((n) => n.href === path) ?? nav[0]);
 	const initials = $derived((user?.email ?? 'A').slice(0, 2).toUpperCase());
 
-	onMount(() =>
-		onAuthStateChanged(auth, (u) => {
+	let configMissing = $state(false);
+
+	onMount(() => {
+		// Tanpa konfigurasi Firebase di build ini, auth bernilai undefined — tampilkan penjelasan, bukan spinner.
+		if (!auth) {
+			configMissing = true;
+			ready = true;
+			return;
+		}
+		return onAuthStateChanged(auth, (u) => {
 			user = u;
 			ready = true;
-		})
-	);
+		});
+	});
 
 	async function login(e: SubmitEvent) {
 		e.preventDefault();
@@ -60,6 +68,16 @@
 <div class="adm">
 	{#if !ready}
 		<div class="boot"><span class="spinner"></span></div>
+	{:else if configMissing}
+		<div class="boot">
+			<div style="max-width: 460px; padding: 24px; text-align: center; line-height: 1.6">
+				<h2 style="margin: 0 0 8px">Konfigurasi Firebase belum terisi</h2>
+				<p style="margin: 0; opacity: 0.75">
+					Build ini tidak memuat variabel <code>VITE_FIREBASE_*</code>. Isi di Vercel → Settings → Environment
+					Variables (scope Production), lalu Redeploy.
+				</p>
+			</div>
+		</div>
 	{:else if !user}
 		<main class="login-wrap">
 			<section class="login-art" aria-hidden="true">
