@@ -8,8 +8,8 @@
 
 	const photos = $derived(
 		(batch?.placePhotos ?? [])
-			.map((p, i) => ({ src: images[`place_${i}`], caption: p.caption }))
-			.filter((p): p is { src: string; caption: string } => !!p.src)
+			.map((p, i) => ({ src: images[`place_${i}`], caption: p.caption, lat: p.lat, lng: p.lng }))
+			.filter((p) => !!p.src)
 	);
 	const hasMap = $derived(batch?.mapLat != null && batch?.mapLng != null);
 </script>

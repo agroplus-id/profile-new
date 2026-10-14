@@ -321,7 +321,7 @@
 	}
 
 	// ───── Gambar batch: disimpan di dokumen terpisah (koleksi batchImages), jadi tiap gambar boleh sampai ~800 KB ─────
-	type PlacePhoto = { caption: string; src: string };
+	type PlacePhoto = { caption: string; src: string; lat?: number | null; lng?: number | null; coord?: string };
 	let imgs = $state<Record<string, string>>({});
 	let dirtyImgs = $state<string[]>([]);
 	let removedImgs = $state<string[]>([]);
@@ -397,20 +397,49 @@
 	}
 
 	// Ambil koordinat dari tautan Google Maps (…@-7.6,112.3… / …!3d-7.6!4d112.3 / …?q=-7.6,112.3) atau teks "lat, lng".
-	function parseMapLink() {
-		const t = mapLink.trim();
+	// Format derajat-menit-detik, mis. 8°09'43.7"S 111°51'53.6"E (salinan dari Google Maps).
+	function parseDms(t: string): [number, number] | null {
+		const re = /(\d+(?:[.,]\d+)?)\s*°\s*(?:(\d+(?:[.,]\d+)?)\s*['′’]\s*)?(?:(\d+(?:[.,]\d+)?)\s*(?:["″”]|''|′′)\s*)?([NSEWnsew])/g;
+		const out: Record<string, number> = {};
+		for (const g of t.matchAll(re)) {
+			const n = (s?: string) => (s ? Number(s.replace(',', '.')) : 0);
+			let v = n(g[1]) + n(g[2]) / 60 + n(g[3]) / 3600;
+			const h = g[4].toUpperCase();
+			if (h === 'S' || h === 'W') v = -v;
+			out[h === 'N' || h === 'S' ? 'lat' : 'lng'] = v;
+		}
+		return out.lat !== undefined && out.lng !== undefined ? [out.lat, out.lng] : null;
+	}
+
+	function readCoord(raw: string): [number, number] | null {
+		const t = raw.trim();
+		const dms = parseDms(t);
+		if (dms) return [Number(dms[0].toFixed(6)), Number(dms[1].toFixed(6))];
 		const m =
 			t.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
 			t.match(/!3d(-?\d+(?:\.\d+)?)!4d(-?\d+(?:\.\d+)?)/) ||
 			t.match(/[?&](?:q|ll|query)=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/) ||
 			t.match(/^(-?\d+(?:\.\d+)?)\s*[, ]\s*(-?\d+(?:\.\d+)?)$/);
-		if (!m) {
+		return m ? [Number(m[1]), Number(m[2])] : null;
+	}
+
+	function parseMapLink() {
+		const c = readCoord(mapLink);
+		if (!c) {
 			notify('Koordinat tidak terbaca. Buka lokasinya di Google Maps lalu salin tautan dari bilah alamat (bukan tautan pendek).', true);
 			return;
 		}
-		form.mapLat = Number(m[1]);
-		form.mapLng = Number(m[2]);
+		form.mapLat = c[0];
+		form.mapLng = c[1];
 		notify('Koordinat terisi');
+	}
+
+	// Koordinat per foto lokasi; kosong = foto muncul melingkar di sekitar titik utama.
+	function setPlaceCoord(pl: PlacePhoto) {
+		placesDirty = true;
+		const c = pl.coord?.trim() ? readCoord(pl.coord) : null;
+		pl.lat = c ? c[0] : null;
+		pl.lng = c ? c[1] : null;
 	}
 
 	async function loadImagesFor(r: Row) {
@@ -420,7 +449,15 @@
 		stepImgs = Array.from({ length: sc }, (_, i) => got[`step_${i}`] ?? '');
 		loadedStepCount = sc;
 		for (const k of ['hero', 'why', 'passport'] as const) if (got[k]) imgs[k] = got[k];
-		places = (r.placePhotos ?? []).map((p, i) => ({ caption: p.caption, src: got[`place_${i}`] ?? '' })).filter((p) => p.src);
+		places = (r.placePhotos ?? [])
+			.map((p, i) => ({
+				caption: p.caption,
+				src: got[`place_${i}`] ?? '',
+				lat: p.lat ?? null,
+				lng: p.lng ?? null,
+				coord: p.lat != null && p.lng != null ? `${p.lat}, ${p.lng}` : ''
+			}))
+			.filter((p) => p.src);
 		loadedPlaceCount = n;
 		// Gambar lama yang tersimpan langsung di dokumen batch dipindahkan ke penyimpanan terpisah saat disimpan.
 		if (!imgs.hero && form.heroImage) {
@@ -525,7 +562,10 @@
 			if (form.lotNumber.trim() && !form.passportNumber) form.passportNumber = await nextPassportNumber();
 			// storeLabel/storeUrl kosong: membersihkan sisa data lama agar tidak muncul lagi
 			const data: Record<string, unknown> = { ...$state.snapshot(form), storeLabel: '', storeUrl: '', heroImage: '', whyImage: '' };
-			if (placesDirty) data.placePhotos = places.map((p) => ({ caption: p.caption.trim() }));
+			if (placesDirty) data.placePhotos = places.map((p) => ({
+				caption: p.caption.trim(),
+				...(p.lat != null && p.lng != null ? { lat: p.lat, lng: p.lng } : {})
+			}));
 			if (editingId) {
 				await patchDoc('batches', editingId, data);
 			} else {
@@ -859,13 +899,21 @@
 							<div class="places">
 								<div class="loc-head">
 									<strong>Foto lokasi ({places.length}/{MAX_PLACES})</strong>
-									<span>Muncul sebagai gambar bulat di sekitar titik dan di kartu tempat saat peta diperbesar.</span>
+									<span>Muncul sebagai gambar bulat saat peta diperbesar. Isi koordinat untuk menaruh foto di titiknya sendiri; kosongkan agar mengelilingi titik utama.</span>
 								</div>
 								<div class="place-grid">
 									{#each places as pl, i}
 										<div class="place">
 											<img src={pl.src} alt="" />
 											<input class="adm-input" bind:value={pl.caption} oninput={() => (placesDirty = true)} placeholder="Keterangan foto" />
+											<input
+												class="adm-input"
+												class:bad={!!pl.coord?.trim() && pl.lat == null}
+												bind:value={pl.coord}
+												oninput={() => setPlaceCoord(pl)}
+												placeholder="Koordinat (opsional)"
+												title="Tempel koordinat Google Maps, mis. 8°09'43.7&quot;S 111°51'53.6&quot;E atau -8.16, 111.86"
+											/>
 											<button type="button" class="adm-btn sm icon danger" onclick={() => removePlace(i)} aria-label="Hapus foto"><Icon name="trash" size={15} /></button>
 										</div>
 									{/each}
@@ -1157,6 +1205,10 @@
 		color: var(--muted);
 		font-size: 0.8rem;
 		line-height: 1.5;
+	}
+
+	.places :global(.adm-input.bad) {
+		border-color: #c0392b;
 	}
 
 	.places {

@@ -2,7 +2,7 @@
 	import { onDestroy, onMount } from 'svelte';
 	import type { Map as LeafletMap } from 'leaflet';
 
-	type Photo = { src: string; caption: string };
+	type Photo = { src: string; caption: string; lat?: number; lng?: number };
 
 	let {
 		lat,
@@ -20,6 +20,19 @@
 	let slide = $state(0);
 	let track = $state<HTMLElement>();
 	let ready = $state(false);
+	let extra: [number, number][] = [];
+
+	const hasPoint = (p: Photo) => p.lat != null && p.lng != null;
+	const current = $derived(photos[slide]);
+	const cardTitle = $derived(current && hasPoint(current) && current.caption ? current.caption : place);
+	const cardLat = $derived(current && hasPoint(current) ? (current.lat as number) : lat);
+	const cardLng = $derived(current && hasPoint(current) ? (current.lng as number) : lng);
+
+	function openPhoto(i: number) {
+		slide = i;
+		cardOpen = true;
+		queueMicrotask(() => track?.scrollTo({ left: i * (track?.clientWidth ?? 0), behavior: 'auto' }));
+	}
 
 	const WORLD_ZOOM = 3;
 	const CLOSE_ZOOM = 9;
@@ -60,7 +73,9 @@
 		root.setAttribute('aria-label', place);
 		root.innerHTML = '<span class="om-pulse"></span><span class="om-dot"></span><span class="om-label"></span>';
 		(root.querySelector('.om-label') as HTMLElement).textContent = place.split(',')[0];
-		photos.slice(0, 6).forEach((p, i, arr) => {
+		// Foto tanpa koordinat mengelilingi titik utama; foto berkoordinat punya penanda sendiri di titiknya.
+		const ring = photos.map((p, i) => ({ p, i })).filter((x) => !hasPoint(x.p)).slice(0, 6);
+		ring.forEach(({ p, i: idx }, i, arr) => {
 			const t = document.createElement('button');
 			t.type = 'button';
 			t.className = 'om-photo';
@@ -74,9 +89,7 @@
 			t.addEventListener('click', (e) => {
 				e.stopPropagation();
 				if (!zoomed) return;
-				slide = i;
-				cardOpen = true;
-				queueMicrotask(() => track?.scrollTo({ left: i * (track?.clientWidth ?? 0), behavior: 'auto' }));
+				openPhoto(idx);
 			});
 			root.appendChild(t);
 		});
@@ -94,6 +107,30 @@
 			icon: L.divIcon({ html: root, className: 'om-icon', iconSize: [0, 0] }),
 			keyboard: false
 		}).addTo(m);
+
+		photos.forEach((p, i) => {
+			if (!hasPoint(p)) return;
+			const pin = document.createElement('button');
+			pin.type = 'button';
+			pin.className = 'om-pin';
+			pin.setAttribute('aria-label', p.caption || `Foto ${i + 1}`);
+			const img = document.createElement('img');
+			img.src = p.src;
+			img.alt = '';
+			pin.appendChild(img);
+			pin.addEventListener('click', (e) => {
+				e.stopPropagation();
+				if (!zoomed) return;
+				openPhoto(i);
+				m.flyTo([p.lat as number, p.lng as number], Math.max(m.getZoom(), 13), { duration: reduce() ? 0 : 1 });
+			});
+			L.DomEvent.disableClickPropagation(pin);
+			L.marker([p.lat as number, p.lng as number], {
+				icon: L.divIcon({ html: pin, className: 'om-icon om-pin-icon', iconSize: [0, 0] }),
+				keyboard: false
+			}).addTo(m);
+			extra.push([p.lat as number, p.lng as number]);
+		});
 		ready = true;
 	});
 
@@ -116,6 +153,18 @@
 		marker?.classList.add('open');
 		map?.dragging.enable();
 		map?.touchZoom.enable();
+		if (extra.length && map) {
+			const pts: [number, number][] = [[lat, lng], ...extra];
+			const done = () => (cardOpen = true);
+			if (reduce()) {
+				map.fitBounds(pts, { padding: [60, 60], maxZoom: 14, animate: false });
+				done();
+			} else {
+				map.once('moveend', done);
+				map.flyToBounds(pts, { padding: [60, 60], maxZoom: 14, duration: 1.7 });
+			}
+			return;
+		}
 		fly(CLOSE_ZOOM, () => (cardOpen = true));
 	}
 
@@ -156,7 +205,7 @@
 	{/if}
 
 	{#if cardOpen}
-		<div class="card" role="dialog" aria-label={place}>
+		<div class="card" role="dialog" aria-label={cardTitle}>
 			<button type="button" class="x" onclick={() => (cardOpen = false)} aria-label="Tutup kartu">
 				<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12" /></svg>
 			</button>
@@ -186,9 +235,9 @@
 			{/if}
 
 			<div class="info">
-				<h4>{place}</h4>
+				<h4>{cardTitle}</h4>
 				{#if note}<p>{note}</p>{/if}
-				<a href="https://www.google.com/maps?q={lat},{lng}" target="_blank" rel="noopener noreferrer">
+				<a href="https://www.google.com/maps?q={cardLat},{cardLng}" target="_blank" rel="noopener noreferrer">
 					Buka di Google Maps
 					<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7M8 7h9v9" /></svg>
 				</a>
@@ -487,6 +536,46 @@
 		background: #0f5a2c;
 		box-shadow: 0 4px 14px rgba(15, 90, 44, 0.55);
 		transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+	}
+
+	/* Foto yang punya koordinat sendiri: bulatan foto di titiknya, hanya tampil saat peta diperbesar */
+	.origin-map :global(.om-pin) {
+		position: absolute;
+		left: -23px;
+		top: -23px;
+		width: 46px;
+		height: 46px;
+		padding: 0;
+		overflow: hidden;
+		border: 3px solid #fff;
+		border-radius: 50%;
+		background: #cfd9c6;
+		box-shadow: 0 8px 20px rgba(20, 28, 12, 0.4);
+		cursor: pointer;
+		opacity: 0;
+		pointer-events: none;
+		transform: scale(0.2);
+		transition:
+			transform 0.7s cubic-bezier(0.16, 1, 0.3, 1) 1s,
+			opacity 0.5s ease 1s;
+	}
+
+	.origin-map.zoomed :global(.om-pin) {
+		opacity: 1;
+		pointer-events: auto;
+		transform: scale(1);
+	}
+
+	.origin-map.zoomed :global(.om-pin:hover) {
+		transform: scale(1.15);
+		transition-delay: 0s;
+	}
+
+	.origin-map :global(.om-pin img) {
+		display: block;
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.origin-map :global(.om-marker:hover .om-dot) {

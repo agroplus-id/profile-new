@@ -25,7 +25,7 @@ export interface Batch {
 	mapLng?: number | null;
 	mapPlace?: string;
 	mapNote?: string;
-	placePhotos?: { caption: string }[]; // gambarnya disimpan terpisah di batchImages (kunci place_0, place_1, …)
+	placePhotos?: { caption: string; lat?: number; lng?: number }[]; // gambarnya disimpan terpisah di batchImages (kunci place_0, place_1, …)
 	whyImage?: string; // foto di bagian "Why we choose this coffee" (data URL); kosong = foto bawaan
 	heroImage?: string; // foto utama di bagian atas halaman (data URL); kosong = gambar bawaan
 	story: string;
