@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '$lib/admin/Icon.svelte';
+	import FilterBar from '$lib/admin/FilterBar.svelte';
+	import { matches, newFilter } from '$lib/admin/filter';
 	import { notify } from '$lib/admin/toast.svelte';
 	import { createDoc, listAll, patchDoc, removeDoc } from '$lib/admin/db';
 	import { resizeLogo } from '$lib/admin/image';
@@ -39,6 +41,48 @@
 
 	const sortByOrder = <T extends { order: number }>(a: T[]) => [...a].sort((x, y) => x.order - y.order);
 	const nextOrder = (a: { order: number }[]) => (a.length ? Math.max(...a.map((x) => x.order)) + 1 : 0);
+
+	// ───── Filter ─────
+	let fPress = $state(newFilter('urut', ['logo', 'link']));
+	let fPartner = $state(newFilter('urut', ['link']));
+
+	const yesNo = (label: string, yes: number, no: number, yesLabel: string, noLabel: string) => ({
+		key: label,
+		label: '',
+		variant: 'select' as const,
+		options: [
+			{ value: '', label: 'Semua' },
+			{ value: 'ada', label: yesLabel, count: yes },
+			{ value: 'tidak', label: noLabel, count: no }
+		]
+	});
+	const pressDefs = $derived([
+		{ ...yesNo('logo', press.filter((r) => r.image).length, press.filter((r) => !r.image).length, 'Pakai logo', 'Judul teks saja'), label: 'Tampilan' },
+		{ ...yesNo('link', press.filter((r) => r.url).length, press.filter((r) => !r.url).length, 'Punya link artikel', 'Tanpa link'), label: 'Link artikel' }
+	]);
+	const partnerDefs = $derived([
+		{ ...yesNo('link', partners.filter((r) => r.url).length, partners.filter((r) => !r.url).length, 'Punya website', 'Tanpa website'), label: 'Website' }
+	]);
+	const PRESS_SORTS = [
+		{ value: 'urut', label: 'Urutan tampil di situs' },
+		{ value: 'judul', label: 'Judul A–Z' }
+	];
+	const PARTNER_SORTS = [
+		{ value: 'urut', label: 'Urutan tampil di situs' },
+		{ value: 'nama', label: 'Nama A–Z' }
+	];
+	const yn = (v: string, has: boolean) => !v || (v === 'ada') === has;
+
+	const shownPress = $derived(
+		press
+			.filter((r) => yn(fPress.values.logo, !!r.image) && yn(fPress.values.link, !!r.url) && matches(fPress.query, r.title, r.quote, r.url))
+			.sort((a, b) => (fPress.sort === 'judul' ? a.title.localeCompare(b.title) : a.order - b.order))
+	);
+	const shownPartners = $derived(
+		partners
+			.filter((r) => yn(fPartner.values.link, !!r.url) && matches(fPartner.query, r.name, r.url))
+			.sort((a, b) => (fPartner.sort === 'nama' ? a.name.localeCompare(b.name) : a.order - b.order))
+	);
 
 	onMount(load);
 
@@ -156,8 +200,9 @@
 			</button>
 		</div>
 	{:else}
+		<FilterBar flat bind:model={fPress} filters={pressDefs} sorts={PRESS_SORTS} placeholder="Cari judul atau kutipan…" total={press.length} shown={shownPress.length} noun="kutipan" />
 		<ul class="rows">
-			{#each press as r (r.id)}
+			{#each shownPress as r (r.id)}
 				<li>
 					<div class="logo">{#if r.image}<img src={r.image} alt="" />{:else}<span>{r.title.slice(0, 2)}</span>{/if}</div>
 					<div class="txt">
@@ -165,8 +210,10 @@
 						<p>{r.quote}</p>
 					</div>
 					<div class="acts">
-						<button class="adm-btn sm icon" onclick={() => move('press', press, r, -1)} aria-label="Naik"><Icon name="up" size={16} /></button>
-						<button class="adm-btn sm icon" onclick={() => move('press', press, r, 1)} aria-label="Turun"><Icon name="down" size={16} /></button>
+						{#if fPress.sort === 'urut'}
+							<button class="adm-btn sm icon" onclick={() => move('press', press, r, -1)} aria-label="Naik"><Icon name="up" size={16} /></button>
+							<button class="adm-btn sm icon" onclick={() => move('press', press, r, 1)} aria-label="Turun"><Icon name="down" size={16} /></button>
+						{/if}
 						<button class="adm-btn sm icon" onclick={() => openPress(r)} aria-label="Edit"><Icon name="edit" size={16} /></button>
 						{#if confirm === 'press' + r.id}
 							<button class="adm-btn sm danger" onclick={() => remove('press', r.id)}>Yakin?</button>
@@ -200,14 +247,17 @@
 			</button>
 		</div>
 	{:else}
+		<FilterBar flat bind:model={fPartner} filters={partnerDefs} sorts={PARTNER_SORTS} placeholder="Cari nama mitra…" total={partners.length} shown={shownPartners.length} noun="logo" />
 		<div class="logos">
-			{#each partners as r (r.id)}
+			{#each shownPartners as r (r.id)}
 				<div class="logo-card">
 					<div class="plate"><img src={r.image} alt={r.name} /></div>
 					<strong>{r.name || 'Tanpa nama'}</strong>
 					<div class="acts">
-						<button class="adm-btn sm icon" onclick={() => move('partners', partners, r, -1)} aria-label="Geser maju"><Icon name="up" size={15} /></button>
-						<button class="adm-btn sm icon" onclick={() => move('partners', partners, r, 1)} aria-label="Geser mundur"><Icon name="down" size={15} /></button>
+						{#if fPartner.sort === 'urut'}
+							<button class="adm-btn sm icon" onclick={() => move('partners', partners, r, -1)} aria-label="Geser maju"><Icon name="up" size={15} /></button>
+							<button class="adm-btn sm icon" onclick={() => move('partners', partners, r, 1)} aria-label="Geser mundur"><Icon name="down" size={15} /></button>
+						{/if}
 						<button class="adm-btn sm icon" onclick={() => openPartner(r)} aria-label="Edit"><Icon name="edit" size={15} /></button>
 						{#if confirm === 'partners' + r.id}
 							<button class="adm-btn sm danger" onclick={() => remove('partners', r.id)}>Yakin?</button>

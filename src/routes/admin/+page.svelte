@@ -12,7 +12,21 @@
 	let loading = $state(true);
 	let teamCount = $state(0);
 	let updates = $state<UpdateRow[]>([]);
-	let orders = $state<(Order & Row)[]>([]);
+	let allOrders = $state<(Order & Row)[]>([]);
+
+	// Filter periode untuk statistik pesanan
+	const PERIODS = [
+		{ value: '7', label: '7 hari' },
+		{ value: '30', label: '30 hari' },
+		{ value: '90', label: '90 hari' },
+		{ value: 'all', label: 'Semua' }
+	];
+	let period = $state('all');
+	const orders = $derived.by(() => {
+		if (period === 'all') return allOrders;
+		const cutoff = new Date(Date.now() - Number(period) * 86_400_000).toISOString();
+		return allOrders.filter((o) => (o.createdAt ?? '') >= cutoff);
+	});
 	let failed = $state(false);
 
 	// ───── Impor data bawaan: menyalin isi situs yang sekarang tertulis di kode ke Firestore ─────
@@ -61,7 +75,7 @@
 		]);
 		if (t.status === 'fulfilled') teamCount = t.value.length;
 		if (u.status === 'fulfilled') updates = u.value;
-		if (o.status === 'fulfilled') orders = o.value;
+		if (o.status === 'fulfilled') allOrders = o.value;
 		failed = [t, u, o].some((r) => r.status === 'rejected');
 		loading = false;
 	});
@@ -84,7 +98,15 @@
 		<h1>{greeting} 👋</h1>
 		<p>Ringkasan konten dan aktivitas situs AgroPlus.ID.</p>
 	</div>
-	<a class="adm-btn primary" href="/admin/updates"><Icon name="plus" size={18} />Tulis berita</a>
+	<div class="head-right">
+		<div class="period" role="group" aria-label="Periode pesanan">
+			<span>Periode pesanan</span>
+			{#each PERIODS as pr}
+				<button type="button" class:on={period === pr.value} onclick={() => (period = pr.value)}>{pr.label}</button>
+			{/each}
+		</div>
+		<a class="adm-btn primary" href="/admin/updates"><Icon name="plus" size={18} />Tulis artikel</a>
+	</div>
 </div>
 
 {#if failed}
@@ -231,6 +253,57 @@
 		width: 40px;
 		height: 40px;
 		border-radius: 12px;
+	}
+
+	.head-right {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.period {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px;
+		border-radius: 999px;
+		background: #e8ede2;
+	}
+
+	.period span {
+		padding: 0 10px 0 12px;
+		color: var(--muted);
+		font-size: 0.72rem;
+		font-weight: 500;
+	}
+
+	.period button {
+		padding: 7px 13px;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--muted);
+		font: inherit;
+		font-size: 0.8rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition:
+			background-color 0.3s var(--ease),
+			color 0.3s var(--ease);
+	}
+
+	.period button.on {
+		background: #fff;
+		color: var(--brand);
+		font-weight: 600;
+		box-shadow: 0 2px 8px rgba(27, 38, 16, 0.12);
+	}
+
+	@media (max-width: 700px) {
+		.period span {
+			display: none;
+		}
 	}
 
 	.warn {

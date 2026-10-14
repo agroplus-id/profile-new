@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '$lib/admin/Icon.svelte';
+	import FilterBar from '$lib/admin/FilterBar.svelte';
+	import { countBy, inRange, matches, newFilter } from '$lib/admin/filter';
 	import { notify } from '$lib/admin/toast.svelte';
 	import { createDocWithId, listAll, patchDoc, removeDoc } from '$lib/admin/db';
 	import { normalizeCode, type Order } from '$lib/admin/orders';
@@ -161,6 +163,95 @@
 
 
 	const orderCount = (id: string) => orders.filter((o) => o.batch === id).length;
+
+	// ───── Filter daftar batch ─────
+	let filt = $state(newFilter('terbaru', ['beans', 'partner', 'orders', 'passport', 'stores']));
+
+	// Mitra, tanggal perilisan, dan jenis beans dibaca dari kolom batch, atau dari kode (AGP-<mitra>-<DDMMYYYY>-<beans><n>).
+	function meta(r: Row) {
+		const doc = r as unknown as { partnerCode?: string; releaseDate?: string; beans?: string };
+		const m = r.id.match(/^AGP-([A-Z0-9]+)-(\d{2})(\d{2})(\d{4})-([A-Z])\d+$/);
+		return {
+			partner: doc.partnerCode || m?.[1] || '',
+			date: doc.releaseDate || (m ? `${m[4]}-${m[3]}-${m[2]}` : ''),
+			beans: doc.beans || m?.[5] || ''
+		};
+	}
+
+	const beansOptions = $derived([
+		{ value: '', label: 'Semua', count: rows.length },
+		...BEANS.map((b) => ({ value: b.letter, label: b.label, count: rows.filter((r) => meta(r).beans === b.letter).length })).filter((o) => o.count > 0)
+	]);
+	const partnerOptions = $derived(
+		[...countBy(rows, (r) => meta(r).partner).entries()]
+			.filter(([k]) => k)
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([value, count]) => ({ value, label: value, count }))
+	);
+	const filterDefs = $derived([
+		{ key: 'beans', label: 'Jenis beans', options: beansOptions },
+		{ key: 'partner', label: 'Mitra', variant: 'select' as const, options: [{ value: '', label: 'Semua mitra' }, ...partnerOptions] },
+		{
+			key: 'orders',
+			label: 'Pesanan',
+			variant: 'select' as const,
+			options: [
+				{ value: '', label: 'Semua' },
+				{ value: 'ada', label: 'Sudah punya pesanan', count: rows.filter((r) => orderCount(r.id) > 0).length },
+				{ value: 'belum', label: 'Belum ada pesanan', count: rows.filter((r) => orderCount(r.id) === 0).length }
+			]
+		},
+		{
+			key: 'passport',
+			label: 'Data paspor',
+			variant: 'select' as const,
+			options: [
+				{ value: '', label: 'Semua' },
+				{ value: 'ada', label: 'Sudah terisi', count: rows.filter((r) => r.lotNumber || r.passportNumber).length },
+				{ value: 'belum', label: 'Belum terisi', count: rows.filter((r) => !(r.lotNumber || r.passportNumber)).length }
+			]
+		},
+		{
+			key: 'stores',
+			label: 'Toko online',
+			variant: 'select' as const,
+			options: [
+				{ value: '', label: 'Semua' },
+				{ value: 'ada', label: 'Ada toko', count: rows.filter((r) => r.stores?.length).length },
+				{ value: 'belum', label: 'Belum ada toko', count: rows.filter((r) => !r.stores?.length).length }
+			]
+		}
+	]);
+	const SORTS = [
+		{ value: 'terbaru', label: 'Perilisan terbaru' },
+		{ value: 'terlama', label: 'Perilisan terlama' },
+		{ value: 'kode', label: 'Kode A–Z' },
+		{ value: 'produksi', label: 'Produksi terbanyak' },
+		{ value: 'pesanan', label: 'Pesanan terbanyak' }
+	];
+
+	const visible = $derived(
+		rows
+			.filter((r) => {
+				const m = meta(r);
+				return (
+					(!filt.values.beans || m.beans === filt.values.beans) &&
+					(!filt.values.partner || m.partner === filt.values.partner) &&
+					(!filt.values.orders || (filt.values.orders === 'ada') === orderCount(r.id) > 0) &&
+					(!filt.values.passport || (filt.values.passport === 'ada') === !!(r.lotNumber || r.passportNumber)) &&
+					(!filt.values.stores || (filt.values.stores === 'ada') === !!r.stores?.length) &&
+					inRange(m.date, filt.from, filt.to) &&
+					matches(filt.query, r.id, r.productName, r.lotNumber, r.passportNumber, r.species, r.farm, r.processor, r.origin)
+				);
+			})
+			.sort((a, b) => {
+				if (filt.sort === 'terlama') return meta(a).date.localeCompare(meta(b).date) || a.id.localeCompare(b.id);
+				if (filt.sort === 'kode') return a.id.localeCompare(b.id);
+				if (filt.sort === 'produksi') return (b.totalGram ?? 0) - (a.totalGram ?? 0);
+				if (filt.sort === 'pesanan') return orderCount(b.id) - orderCount(a.id);
+				return meta(b).date.localeCompare(meta(a).date) || b.id.localeCompare(a.id);
+			})
+	);
 
 	function openAdd() {
 		editingId = null;
@@ -436,6 +527,10 @@
 	<button class="adm-btn primary" onclick={openAdd}><Icon name="plus" size={18} />Tambah batch</button>
 </div>
 
+{#if rows.length}
+	<FilterBar bind:model={filt} filters={filterDefs} sorts={SORTS} dateLabel="Tanggal perilisan" placeholder="Cari kode, produk, lot, kebun…" total={rows.length} shown={visible.length} noun="batch" />
+{/if}
+
 {#if loading}
 	<div class="adm-card adm-empty">Memuat batch…</div>
 {:else if !rows.length}
@@ -450,9 +545,11 @@
 			<button class="adm-btn" onclick={openAdd}>Buat batch pertama</button>
 		</div>
 	</div>
+{:else if !visible.length}
+	<div class="adm-card adm-empty">Tidak ada batch yang cocok dengan filter.</div>
 {:else}
 	<div class="grid">
-		{#each rows as r, i (r.id)}
+		{#each visible as r, i (r.id)}
 			<article class="adm-card batch adm-rise" style="--i:{Math.min(i, 8)}">
 				<div class="top">
 					<span class="code">{r.id}</span>

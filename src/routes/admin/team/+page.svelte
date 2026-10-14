@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import Icon from '$lib/admin/Icon.svelte';
+	import FilterBar from '$lib/admin/FilterBar.svelte';
+	import { matches, newFilter } from '$lib/admin/filter';
 	import { notify } from '$lib/admin/toast.svelte';
 	import {
 		GROUP_LABELS,
@@ -21,8 +23,7 @@
 	let loading = $state(true);
 	let saving = $state(false);
 	let seeding = $state('');
-	let filter = $state<TeamGroup | 'all'>('all');
-	let query = $state('');
+	let filt = $state(newFilter('urut', ['group', 'photo']));
 
 	let drawer = $state(false);
 	let editingId = $state<string | null>(null);
@@ -31,7 +32,7 @@
 	const blank = (): TeamInput => ({
 		name: '',
 		role: '',
-		group: filter === 'all' ? 'team' : filter,
+		group: (filt.values.group as TeamGroup) || 'team',
 		order: members.length ? Math.max(...members.map((m) => m.order)) + 1 : 0,
 		image: '',
 		linkedin: '',
@@ -40,12 +41,45 @@
 	});
 	let form = $state<TeamInput>(blank());
 
+	const filterDefs = $derived([
+		{
+			key: 'group',
+			label: 'Grup',
+			options: [
+				{ value: '', label: 'Semua', count: members.length },
+				...groups.map((g) => ({ value: g, label: GROUP_LABELS[g], count: members.filter((m) => m.group === g).length }))
+			]
+		},
+		{
+			key: 'photo',
+			label: 'Foto',
+			variant: 'select' as const,
+			options: [
+				{ value: '', label: 'Semua' },
+				{ value: 'ada', label: 'Sudah ada foto', count: members.filter((m) => m.image).length },
+				{ value: 'tidak', label: 'Belum ada foto', count: members.filter((m) => !m.image).length }
+			]
+		}
+	]);
+	const SORTS = [
+		{ value: 'urut', label: 'Urutan tampil di situs' },
+		{ value: 'nama', label: 'Nama A–Z' },
+		{ value: 'jabatan', label: 'Jabatan A–Z' }
+	];
+
 	const visible = $derived(
-		members.filter(
-			(m) =>
-				(filter === 'all' || m.group === filter) &&
-				(m.name + ' ' + m.role).toLowerCase().includes(query.trim().toLowerCase())
-		)
+		members
+			.filter(
+				(m) =>
+					(!filt.values.group || m.group === filt.values.group) &&
+					(!filt.values.photo || (filt.values.photo === 'ada') === !!m.image) &&
+					matches(filt.query, m.name, m.role, m.linkedin, m.instagram)
+			)
+			.sort((a, b) => {
+				if (filt.sort === 'nama') return a.name.localeCompare(b.name);
+				if (filt.sort === 'jabatan') return (a.role || '~').localeCompare(b.role || '~') || a.name.localeCompare(b.name);
+				return a.order - b.order;
+			})
 	);
 
 	onMount(load);
@@ -149,20 +183,7 @@
 	<button class="adm-btn primary" onclick={openAdd}><Icon name="plus" size={18} />Tambah anggota</button>
 </div>
 
-<div class="toolbar">
-	<div class="search">
-		<Icon name="search" size={18} />
-		<input class="adm-input" placeholder="Cari nama atau jabatan…" bind:value={query} />
-	</div>
-	<div class="chips">
-		<button class:on={filter === 'all'} onclick={() => (filter = 'all')}>Semua <b>{members.length}</b></button>
-		{#each groups as g}
-			<button class:on={filter === g} onclick={() => (filter = g)}>
-				{GROUP_LABELS[g]} <b>{members.filter((m) => m.group === g).length}</b>
-			</button>
-		{/each}
-	</div>
-</div>
+<FilterBar bind:model={filt} filters={filterDefs} sorts={SORTS} placeholder="Cari nama, jabatan, atau tautan sosial…" total={members.length} shown={visible.length} noun="anggota" />
 
 {#if loading}
 	<div class="grid">
@@ -187,9 +208,11 @@
 					<span class="adm-badge gray">{GROUP_LABELS[m.group]}</span>
 				</div>
 				<div class="acts">
-					<button class="adm-btn sm icon" onclick={() => move(m, -1)} aria-label="Naik"><Icon name="up" size={16} /></button>
-					<button class="adm-btn sm icon" onclick={() => move(m, 1)} aria-label="Turun"><Icon name="down" size={16} /></button>
-					<button class="adm-btn sm" onclick={() => openEdit(m)}><Icon name="edit" size={15} />Edit</button>
+					{#if filt.sort === 'urut'}
+						<button class="adm-btn sm icon" onclick={() => move(m, -1)} aria-label="Naik"><Icon name="up" size={16} /></button>
+						<button class="adm-btn sm icon" onclick={() => move(m, 1)} aria-label="Turun"><Icon name="down" size={16} /></button>
+					{/if}
+					<button class="adm-btn sm push" onclick={() => openEdit(m)}><Icon name="edit" size={15} />Edit</button>
 					{#if confirmId === m.id}
 						<button class="adm-btn sm danger" onclick={() => remove(m)}>Yakin?</button>
 					{:else}
@@ -239,72 +262,6 @@
 {/if}
 
 <style>
-	.toolbar {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		margin-bottom: 20px;
-	}
-
-	.search {
-		position: relative;
-		flex: 1 1 260px;
-		max-width: 360px;
-		color: var(--muted);
-	}
-
-	.search :global(svg) {
-		position: absolute;
-		left: 14px;
-		top: 50%;
-		translate: 0 -50%;
-		pointer-events: none;
-	}
-
-	.search input {
-		padding-left: 42px;
-	}
-
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.chips button {
-		display: inline-flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 14px;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		background: var(--surface);
-		color: var(--muted);
-		font: inherit;
-		font-size: 0.82rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.3s var(--ease);
-	}
-
-	.chips button b {
-		padding: 1px 8px;
-		border-radius: 999px;
-		background: #edf1e8;
-		font-size: 0.72rem;
-	}
-
-	.chips button.on {
-		border-color: transparent;
-		background: var(--brand);
-		color: #fff;
-	}
-
-	.chips button.on b {
-		background: rgba(255, 255, 255, 0.2);
-	}
 
 	.grid {
 		display: grid;
@@ -372,7 +329,7 @@
 		border-top: 1px solid var(--line);
 	}
 
-	.acts .adm-btn:nth-child(3) {
+	.acts .push {
 		margin-left: auto;
 	}
 

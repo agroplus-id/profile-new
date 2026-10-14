@@ -20,6 +20,12 @@ service cloud.firestore {
       allow list, create, update, delete: if isAdmin();
     }
 
+    // Isi artikel berita (HTML): dibaca per artikel; daftar dan ubah hanya admin.
+    match /articles/{id} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+
     // Penghitung nomor paspor (hanya admin).
     match /counters/{id} { allow read, write: if isAdmin(); }
 

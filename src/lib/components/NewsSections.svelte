@@ -6,7 +6,7 @@
 	import { db } from '$lib/firebase';
 	import { formatDate } from '$lib/admin/db';
 
-	type Card = { title: string; date: string; category: string; image?: string };
+	type Card = { id?: string; title: string; date: string; category: string; image?: string };
 
 	// Contoh bawaan tampil dulu; diganti berita dari Firestore bila admin sudah mengisinya.
 	let updates = $state<Card[]>(fallbackUpdates.map((u) => ({ ...u, category: 'Press Release' })));
@@ -43,12 +43,13 @@
 		try {
 			const snap = await getDocs(collection(db, 'updates'));
 			const rows = snap.docs
-				.map((d) => d.data() as Card & { published?: boolean; dateIso?: string })
+				.map((d) => ({ id: d.id, ...(d.data() as Omit<Card, 'id'> & { published?: boolean }) }))
 				.filter((r) => r.published !== false)
 				.sort((a, b) => String(b.date).localeCompare(String(a.date)))
 				.slice(0, 6);
 			if (rows.length)
 				updates = rows.map((r) => ({
+					id: r.id,
 					title: r.title,
 					category: r.category || 'News',
 					image: r.image,
@@ -63,7 +64,7 @@
 <section class="updates-section" aria-labelledby="updates-title">
 	<div class="section-heading" use:fadeUp>
 		<h2 id="updates-title">Updates</h2>
-		<a use:magneticHover href="/">More Updates</a>
+		<a use:magneticHover href="/updates">More Updates</a>
 	</div>
 	<div class="updates-grid" use:staggerUp={{ staggerDelay: 0.12, y: 36 }}>
 		{#each updates as update}
@@ -71,6 +72,7 @@
 				<div class="update-thumb">{#if update.image}<img src={update.image} alt="" />{/if}</div>
 				<p><span>{update.category}</span><i></i>{update.date}</p>
 				<h3>{update.title}</h3>
+				{#if update.id}<a class="card-link" href="/updates/{update.id}" aria-label={update.title}></a>{/if}
 			</article>
 		{/each}
 	</div>
@@ -118,6 +120,17 @@
 </section>
 
 <style>
+	.update-card {
+		position: relative;
+	}
+
+	.card-link {
+		position: absolute;
+		inset: 0;
+		z-index: 2;
+		border-radius: inherit;
+	}
+
 	.press-arrows button {
 		display: grid;
 		place-items: center;

@@ -3,6 +3,8 @@
 	import Icon from '$lib/admin/Icon.svelte';
 	import { notify } from '$lib/admin/toast.svelte';
 	import { createDocWithId, listAll, patchDoc, removeDoc, formatDate } from '$lib/admin/db';
+	import FilterBar from '$lib/admin/FilterBar.svelte';
+	import { countBy, inRange, matches, newFilter } from '$lib/admin/filter';
 	import { ORDER_STATUS, normalizeCode, type Order, type OrderStatus } from '$lib/admin/orders';
 
 	type Row = Order & { id: string };
@@ -25,24 +27,48 @@
 	let batchCodes = $state<string[]>([]);
 	let loading = $state(true);
 	let saving = $state(false);
-	let query = $state('');
-	let filter = $state<OrderStatus | 'all'>('all');
 	let drawer = $state(false);
 	let editingId = $state<string | null>(null);
 	let confirmId = $state<string | null>(null);
 	let form = $state<Order>(blank());
 
+	let filt = $state(newFilter('terbaru', ['status', 'product', 'batch']));
+
+	const statusOptions = $derived([
+		{ value: '', label: 'Semua', count: rows.length },
+		...ORDER_STATUS.map((st) => ({ value: st.key, label: st.label, count: rows.filter((o) => o.status === st.key).length }))
+	]);
+	const distinct = (pick: (o: Row) => string) =>
+		[...countBy(rows, pick).entries()].filter(([k]) => k).sort(([a], [b]) => a.localeCompare(b)).map(([value, count]) => ({ value, label: value, count }));
+	const filterDefs = $derived([
+		{ key: 'status', label: 'Status', options: statusOptions },
+		{ key: 'product', label: 'Produk', variant: 'select' as const, options: [{ value: '', label: 'Semua produk' }, ...distinct((o) => o.product)] },
+		{ key: 'batch', label: 'Kode batch', variant: 'select' as const, options: [{ value: '', label: 'Semua batch' }, ...distinct((o) => o.batch)] }
+	]);
+	const SORTS = [
+		{ value: 'terbaru', label: 'Terbaru' },
+		{ value: 'terlama', label: 'Terlama' },
+		{ value: 'nama', label: 'Nama pelanggan A–Z' },
+		{ value: 'status', label: 'Status' }
+	];
+	const statusRank = (k: string) => ORDER_STATUS.findIndex((x) => x.key === k);
+
 	const visible = $derived(
-		[...rows]
-			.sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+		rows
 			.filter(
 				(o) =>
-					(filter === 'all' || o.status === filter) &&
-					[o.orderCode, o.customerName, o.email, o.phone, o.product]
-						.join(' ')
-						.toLowerCase()
-						.includes(query.trim().toLowerCase())
+					(!filt.values.status || o.status === filt.values.status) &&
+					(!filt.values.product || o.product === filt.values.product) &&
+					(!filt.values.batch || o.batch === filt.values.batch) &&
+					inRange(o.createdAt, filt.from, filt.to) &&
+					matches(filt.query, o.orderCode, o.customerName, o.email, o.phone, o.product, o.batch)
 			)
+			.sort((a, b) => {
+				if (filt.sort === 'terlama') return (a.createdAt ?? '').localeCompare(b.createdAt ?? '');
+				if (filt.sort === 'nama') return (a.customerName || '~').localeCompare(b.customerName || '~');
+				if (filt.sort === 'status') return statusRank(a.status) - statusRank(b.status);
+				return (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+			})
 	);
 
 	onMount(load);
@@ -163,18 +189,7 @@
 	<button class="adm-btn primary" onclick={openAdd}><Icon name="plus" size={18} />Tambah pesanan</button>
 </div>
 
-<div class="toolbar">
-	<div class="search">
-		<Icon name="search" size={18} />
-		<input class="adm-input" placeholder="Cari kode, nama, email…" bind:value={query} />
-	</div>
-	<div class="chips">
-		<button class:on={filter === 'all'} onclick={() => (filter = 'all')}>Semua</button>
-		{#each ORDER_STATUS as s}
-			<button class:on={filter === s.key} onclick={() => (filter = s.key)}>{s.label}</button>
-		{/each}
-	</div>
-</div>
+<FilterBar bind:model={filt} filters={filterDefs} sorts={SORTS} dateLabel="Tanggal pesanan" placeholder="Cari kode, nama, email, telepon…" total={rows.length} shown={visible.length} noun="pesanan" />
 
 <div class="adm-card tablecard">
 	{#if loading}
@@ -277,58 +292,6 @@
 {/if}
 
 <style>
-	.toolbar {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 12px;
-		margin-bottom: 20px;
-	}
-
-	.search {
-		position: relative;
-		flex: 1 1 260px;
-		max-width: 360px;
-		color: var(--muted);
-	}
-
-	.search :global(svg) {
-		position: absolute;
-		left: 14px;
-		top: 50%;
-		translate: 0 -50%;
-		pointer-events: none;
-	}
-
-	.search input {
-		padding-left: 42px;
-	}
-
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 8px;
-	}
-
-	.chips button {
-		padding: 8px 14px;
-		border: 1px solid var(--line);
-		border-radius: 999px;
-		background: var(--surface);
-		color: var(--muted);
-		font: inherit;
-		font-size: 0.82rem;
-		font-weight: 500;
-		cursor: pointer;
-		transition: all 0.3s var(--ease);
-	}
-
-	.chips button.on {
-		border-color: transparent;
-		background: var(--brand);
-		color: #fff;
-	}
 
 	.tablecard {
 		padding: 10px 16px 16px;
