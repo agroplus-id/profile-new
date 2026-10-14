@@ -3,7 +3,7 @@
 	import { DEFAULT_BATCH, type Batch } from '$lib/batch';
 	import { pauseSmoothScroll, resumeSmoothScroll } from '$lib/smooth-scroll';
 
-	let { batch = DEFAULT_BATCH, itemNumber = 1 }: { batch?: Batch; itemNumber?: number } = $props();
+	let { batch = DEFAULT_BATCH, itemNumber = 1 }: { batch?: Batch; itemNumber?: number | null } = $props();
 
 	// Data disimpan dalam gram, ditampilkan dalam kilogram.
 	const kg = (gram: number) => Number((gram / 1000).toFixed(3));
@@ -63,7 +63,9 @@
 	<div class="batch-inner">
 		<div class="batch-header">
 			<h2 id="batch-title">Your Coffee<br />Batch Detail</h2>
-			<div class="item-number">Item Number<br /><strong>{itemNumber}/{batch.totalItems}</strong></div>
+			{#if itemNumber !== null}
+				<div class="item-number">Item Number<br /><strong>{itemNumber}/{batch.totalItems}</strong></div>
+			{/if}
 		</div>
 
 		<div class="batch-rows">

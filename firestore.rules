@@ -11,6 +11,7 @@ service cloud.firestore {
     // Konten publik: boleh dibaca siapa saja, hanya admin yang boleh mengubah.
     match /team/{id}     { allow read: if true; allow write: if isAdmin(); }
     match /updates/{id}  { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id} { allow get: if true; allow list, write: if isAdmin(); }
     match /press/{id}    { allow read: if true; allow write: if isAdmin(); }
     match /partners/{id} { allow read: if true; allow write: if isAdmin(); }
 

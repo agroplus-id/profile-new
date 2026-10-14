@@ -4,7 +4,7 @@
 	import FilterBar from '$lib/admin/FilterBar.svelte';
 	import { countBy, inRange, matches, newFilter } from '$lib/admin/filter';
 	import { notify } from '$lib/admin/toast.svelte';
-	import { createDocWithId, listAll, patchDoc, removeDoc } from '$lib/admin/db';
+	import { createDocWithId, listAll, patchDoc, readDoc, removeDoc, writeDoc } from '$lib/admin/db';
 	import { normalizeCode, type Order } from '$lib/admin/orders';
 	import { FLAVOR_OPTIONS, blankBatch, guessStoreName, type Batch } from '$lib/batch';
 	import { importFromFerroir, nextPassportNumber } from '$lib/admin/passport';
@@ -19,6 +19,7 @@
 	const FERROIR_IMPORT = false;
 
 	let rows = $state<Row[]>([]);
+	let featuredId = $state<string | null>(null); // batch yang tampil di halaman /bumi-kopi
 	let orders = $state<(Order & { id: string })[]>([]);
 	let loading = $state(true);
 	let saving = $state(false);
@@ -147,6 +148,7 @@
 		loading = true;
 		try {
 			[rows, orders] = await Promise.all([listAll<Batch>('batches'), listAll<Order>('orders')]);
+			featuredId = (await readDoc<{ batchId?: string }>('settings', 'featured').catch(() => null))?.batchId ?? null;
 		} catch (err) {
 			notify('Gagal memuat batch: ' + err, true);
 		} finally {
@@ -530,6 +532,8 @@
 				await createDocWithId('batches', id, { ...data, ...codeMeta, partnerCode: cleanPartner(partnerCode), releaseDate, beans });
 			}
 			await persistImages(id);
+			// Batch pertama otomatis menjadi isi halaman /bumi-kopi; batch berikutnya dipilih manual dari daftar.
+			if (!editingId && !featuredId) await setFeatured(id, true);
 			notify(editingId ? 'Batch diperbarui' : `Batch ${id} ditambahkan`);
 			drawer = false;
 			await load();
@@ -540,9 +544,23 @@
 		}
 	}
 
+	async function setFeatured(id: string, quiet = false) {
+		try {
+			await writeDoc('settings', 'featured', { batchId: id });
+			featuredId = id;
+			if (!quiet) notify('Batch ini sekarang tampil di halaman /bumi-kopi');
+		} catch (err) {
+			notify('Gagal menyimpan pilihan: ' + err, true);
+		}
+	}
+
 	async function remove(r: Row) {
 		try {
 			await removeDoc('batches', r.id);
+			if (featuredId === r.id) {
+				await writeDoc('settings', 'featured', { batchId: '' }).catch(() => {});
+				featuredId = null;
+			}
 			notify('Batch dihapus');
 			confirmId = null;
 			await load();
@@ -589,6 +607,7 @@
 			<article class="adm-card batch adm-rise" style="--i:{Math.min(i, 8)}">
 				<div class="top">
 					<span class="code">{r.id}</span>
+					{#if featuredId === r.id}<span class="adm-badge">Halaman /bumi-kopi</span>{/if}
 					<span class="adm-badge gray">{orderCount(r.id)} pesanan</span>
 				</div>
 				<h3>{r.productName}</h3>
@@ -599,6 +618,10 @@
 					<div><dt>Produksi</dt><dd>{kg(r.totalGram)} kg · {r.totalItems} kemasan</dd></div>
 				</dl>
 				<div class="acts">
+					<a class="adm-btn sm" href="/batch/{r.id}" target="_blank" rel="noreferrer"><Icon name="external" size={15} />Lihat</a>
+					{#if featuredId !== r.id}
+						<button class="adm-btn sm" onclick={() => setFeatured(r.id)}>Jadikan halaman Bumi Kopi</button>
+					{/if}
 					<button class="adm-btn sm" onclick={() => openEdit(r)}><Icon name="edit" size={15} />Edit</button>
 					{#if confirmId === r.id}
 						<button class="adm-btn sm danger" onclick={() => remove(r)}>Yakin?</button>
@@ -646,6 +669,7 @@
 				<h2>{editingId ? 'Edit batch' : 'Batch baru'}{#if editingId}<span class="code-pill">{code}</span>{/if}</h2>
 			</div>
 			<div class="ed-acts">
+				{#if editingId}<a class="adm-btn" href="/batch/{editingId}" target="_blank" rel="noreferrer"><Icon name="external" size={16} />Lihat halaman</a>{/if}
 				<button type="button" class="adm-btn" onclick={() => (drawer = false)}>Batal</button>
 				<button class="adm-btn primary" type="submit" form="batch-form" disabled={saving}>
 					<Icon name="check" size={18} />{saving ? 'Menyimpan…' : 'Simpan batch'}
@@ -1372,6 +1396,7 @@
 
 	.acts {
 		display: flex;
+		flex-wrap: wrap;
 		gap: 6px;
 		padding-top: 12px;
 		border-top: 1px solid var(--line);
