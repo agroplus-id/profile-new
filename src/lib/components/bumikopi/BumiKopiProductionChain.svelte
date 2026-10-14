@@ -138,6 +138,12 @@
 	}
 
 	/* Garis kisi tipis seperti desain acuan */
+	.lines {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
+
 	.lines i {
 		position: absolute;
 		background: rgba(132, 153, 98, 0.35);
@@ -381,10 +387,11 @@
 		position: absolute;
 		left: 0;
 		right: 0;
-		bottom: 52px;
+		top: calc(50% - 20px);
+		translate: 0 -50%;
 		display: grid;
 		gap: 16px;
-		max-height: 100%;
+		max-height: calc(100% - 72px);
 		pointer-events: none;
 	}
 

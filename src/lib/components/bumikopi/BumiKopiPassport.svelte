@@ -2,6 +2,7 @@
 	import { bumiKopiImages } from '$lib/data/bumikopi';
 	import type { Batch } from '$lib/batch';
 	import OriginMap from './OriginMap.svelte';
+	import stampUrl from '$lib/assets/images/bumikopi/stamp.png';
 
 	// Tanpa data batch: tampilkan grafis paspor bawaan. Dengan data batch: kartu paspor dari data admin.
 	let { batch, images = {} }: { batch?: Batch; images?: Record<string, string> } = $props();
@@ -35,13 +36,7 @@
 					{#if images.passport}
 						<div class="photo">
 							<img src={images.passport} alt="{batch.productName} beans" />
-							<svg class="stamp" viewBox="0 0 200 200" aria-hidden="true">
-								<defs><path id="arc" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0" /></defs>
-								<circle cx="100" cy="100" r="94" fill="none" stroke="currentColor" stroke-width="6" />
-								<circle cx="100" cy="100" r="58" fill="none" stroke="currentColor" stroke-width="3" />
-								<text font-size="19" font-weight="800" letter-spacing="4" fill="currentColor"><textPath href="#arc" startOffset="2%">VERIFIED ORIGIN · AGROPLUS ·</textPath></text>
-								<text x="100" y="108" text-anchor="middle" font-size="16" font-weight="800" fill="currentColor">COFFEEID</text>
-							</svg>
+							<img class="stamp" src={stampUrl} alt="" aria-hidden="true" />
 						</div>
 					{/if}
 
@@ -185,7 +180,7 @@
 		padding: 10px;
 	}
 
-	.photo img {
+	.photo img:not(.stamp) {
 		display: block;
 		width: 100%;
 		height: 100%;
@@ -198,7 +193,9 @@
 		left: -14%;
 		bottom: -14%;
 		width: 62%;
-		color: #1f4a22;
+		height: auto;
+		object-fit: contain;
+		pointer-events: none;
 		opacity: 0.92;
 		transform: rotate(-12deg);
 		filter: drop-shadow(0 2px 3px rgba(31, 74, 34, 0.25));
