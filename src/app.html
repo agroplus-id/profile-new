@@ -10,6 +10,22 @@
 			rel="stylesheet"
 			href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,300;1,400&display=swap"
 		/>
+		<!-- Layar pembuka hanya pada kunjungan pertama per sesi, di halaman publik, dan tanpa reduce-motion. Ditentukan di sini agar tidak berkedip. -->
+		<script>
+			(function () {
+				var root = document.documentElement;
+				try {
+					var skip =
+						sessionStorage.getItem('agroplus-intro') ||
+						location.pathname.indexOf('/admin') === 0 ||
+						(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+					root.setAttribute('data-intro', skip ? 'skip' : 'play');
+					if (!skip) root.style.setProperty('--intro-delay', '2.7s');
+				} catch (e) {
+					root.setAttribute('data-intro', 'skip');
+				}
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

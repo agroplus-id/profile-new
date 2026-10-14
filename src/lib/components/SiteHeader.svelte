@@ -683,16 +683,16 @@
 
 	/* Animasi masuk saat halaman dimuat */
 	.vnav-bar {
-		animation: bar-in 0.9s var(--ease) backwards;
+		animation: bar-in 0.9s var(--ease) var(--intro-delay, 0s) backwards;
 	}
 
 	.vnav-li {
 		animation: item-in 0.8s var(--ease) backwards;
-		animation-delay: calc(0.25s + var(--i) * 0.07s);
+		animation-delay: calc(0.25s + var(--i) * 0.07s + var(--intro-delay, 0s));
 	}
 
 	.vnav-right {
-		animation: item-in 0.8s var(--ease) 0.5s backwards;
+		animation: item-in 0.8s var(--ease) calc(0.5s + var(--intro-delay, 0s)) backwards;
 	}
 
 	@keyframes bar-in {

@@ -182,7 +182,7 @@
 	.eyebrow,
 	.line,
 	.cta {
-		animation: rise 1.1s var(--ease) var(--d, 0s) backwards;
+		animation: rise 1.1s var(--ease) calc(var(--d, 0s) + var(--intro-delay, 0s)) backwards;
 	}
 
 	@keyframes rise {

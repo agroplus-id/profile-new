@@ -326,6 +326,10 @@
 	let places = $state<PlacePhoto[]>([]);
 	let placesDirty = $state(false);
 	let loadedPlaceCount = 0;
+	// Gambar tiap fase rantai produksi, sejajar dengan form.steps
+	let stepImgs = $state<string[]>([]);
+	let stepsDirty = $state(false);
+	let loadedStepCount = 0;
 	let mapLink = $state('');
 	const MAX_PLACES = 6;
 
@@ -336,6 +340,9 @@
 		places = [];
 		placesDirty = false;
 		loadedPlaceCount = 0;
+		stepImgs = [];
+		stepsDirty = false;
+		loadedStepCount = 0;
 		mapLink = '';
 	}
 
@@ -406,7 +413,10 @@
 
 	async function loadImagesFor(r: Row) {
 		const n = r.placePhotos?.length ?? 0;
-		const got = await fetchImages(r.id, imageKeys(n));
+		const sc = r.steps?.length ?? 0;
+		const got = await fetchImages(r.id, imageKeys(n, sc));
+		stepImgs = Array.from({ length: sc }, (_, i) => got[`step_${i}`] ?? '');
+		loadedStepCount = sc;
 		for (const k of ['hero', 'why', 'passport'] as const) if (got[k]) imgs[k] = got[k];
 		places = (r.placePhotos ?? []).map((p, i) => ({ caption: p.caption, src: got[`place_${i}`] ?? '' })).filter((p) => p.src);
 		loadedPlaceCount = n;
@@ -421,9 +431,30 @@
 		}
 	}
 
+	async function pickStepImage(e: Event, i: number) {
+		const input = e.currentTarget as HTMLInputElement;
+		const file = input.files?.[0];
+		if (!file) return;
+		try {
+			stepImgs[i] = await compress(file, 1000, 0.78, 450_000);
+			stepsDirty = true;
+		} catch (err) {
+			notify(String(err).includes('too-big') ? 'Gambar terlalu besar, pilih yang lebih sederhana atau lebih kecil' : 'File bukan gambar yang valid', true);
+		} finally {
+			input.value = '';
+		}
+	}
+
 	async function persistImages(id: string) {
 		for (const k of dirtyImgs) if (imgs[k]) await saveImage(id, k, imgs[k]);
 		for (const k of removedImgs) await deleteImage(id, k);
+		if (stepsDirty) {
+			for (let i = 0; i < form.steps.length; i++) {
+				if (stepImgs[i]) await saveImage(id, `step_${i}`, stepImgs[i]);
+				else if (i < loadedStepCount) await deleteImage(id, `step_${i}`);
+			}
+			for (let i = form.steps.length; i < loadedStepCount; i++) await deleteImage(id, `step_${i}`);
+		}
 		if (placesDirty) {
 			for (let i = 0; i < places.length; i++) await saveImage(id, `place_${i}`, places[i].src);
 			for (let i = places.length; i < loadedPlaceCount; i++) await deleteImage(id, `place_${i}`);
@@ -440,16 +471,21 @@
 
 	function addStep() {
 		form.steps.push({ name: '', description: '' });
+		stepImgs.push('');
 	}
 
 	function removeStep(i: number) {
 		form.steps.splice(i, 1);
+		stepImgs.splice(i, 1);
+		stepsDirty = true;
 	}
 
 	function moveStep(i: number, dir: -1 | 1) {
 		const j = i + dir;
 		if (j < 0 || j >= form.steps.length) return;
 		[form.steps[i], form.steps[j]] = [form.steps[j], form.steps[i]];
+		[stepImgs[i], stepImgs[j]] = [stepImgs[i] ?? '', stepImgs[j] ?? ''].reverse();
+		stepsDirty = true;
 	}
 
 	function toggleFlavor(key: string) {
@@ -838,6 +874,16 @@
 										<button type="button" class="adm-btn sm icon danger" onclick={() => removeStep(i)} aria-label="Hapus tahap"><Icon name="trash" size={15} /></button>
 									</div>
 									<textarea class="adm-input" rows="4" bind:value={step.description} placeholder="Penjelasan tahap ini"></textarea>
+									<div class="step-img">
+										<div class="si-prev">{#if stepImgs[i]}<img src={stepImgs[i]} alt="" />{:else}<Icon name="media" size={18} />{/if}</div>
+										<label class="adm-btn sm">
+											{stepImgs[i] ? 'Ganti gambar fase' : 'Gambar fase (opsional)'}
+											<input type="file" accept="image/*" hidden onchange={(e) => pickStepImage(e, i)} />
+										</label>
+										{#if stepImgs[i]}
+											<button type="button" class="adm-btn sm" onclick={() => { stepImgs[i] = ''; stepsDirty = true; }}>Hapus</button>
+										{/if}
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -1537,6 +1583,29 @@
 		border: 1px solid var(--line);
 		border-radius: 16px;
 		background: #fafbf8;
+	}
+
+	.step-img {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.si-prev {
+		display: grid;
+		place-items: center;
+		width: 46px;
+		height: 46px;
+		overflow: hidden;
+		border-radius: 10px;
+		background: #e4e9dd;
+		color: var(--muted);
+	}
+
+	.si-prev img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
 	}
 
 	.step-head {

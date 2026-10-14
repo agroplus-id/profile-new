@@ -39,7 +39,7 @@
 			batch = loaded;
 			// Gambar disimpan terpisah; dimuat setelah teks tampil agar halaman tidak menunggu.
 			if (order?.batch && batchSnap?.exists()) {
-				images = await fetchImages(order.batch, imageKeys(loaded.placePhotos?.length ?? 0));
+				images = await fetchImages(order.batch, imageKeys(loaded.placePhotos?.length ?? 0, loaded.steps.length));
 			}
 		} catch (err) {
 			console.warn('Gagal memuat data batch, memakai tampilan bawaan.', err);
@@ -61,7 +61,7 @@
 		{#if batch.passportNumber || batch.lotNumber}
 			<BumiKopiPassport {batch} {images} />
 		{/if}
-		<BumiKopiProductionChain {batch} />
+		<BumiKopiProductionChain {batch} {images} />
 		<BumiKopiFlavors {batch} />
 		<BumiKopiBatchDetails {batch} {itemNumber} />
 		<SiteFooter />

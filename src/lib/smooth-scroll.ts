@@ -30,5 +30,9 @@ export function destroySmoothScroll() {
 }
 
 // Dipakai saat overlay (menu mobile) terbuka agar halaman di belakangnya tidak ikut bergulir.
+// Gulir halus ke posisi Y (lewat Lenis bila aktif, kalau tidak lewat scroll bawaan browser).
+export const scrollToY = (y: number) =>
+	lenis ? lenis.scrollTo(y, { duration: 1.4 }) : window.scrollTo({ top: y, behavior: 'smooth' });
+
 export const pauseSmoothScroll = () => lenis?.stop();
 export const resumeSmoothScroll = () => lenis?.start();

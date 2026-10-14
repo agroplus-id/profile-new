@@ -45,7 +45,8 @@
 		width: 100%;
 		margin: 0;
 		background: #f0f3f1;
-		overflow: hidden;
+		/* clip (bukan hidden): tetap memotong luapan tetapi tidak membuat kontainer scroll, jadi position: sticky tetap bekerja */
+		overflow: clip;
 	}
 
 	.nav {
