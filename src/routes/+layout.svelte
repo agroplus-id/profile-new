@@ -1,5 +1,5 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+	import favicon from '$lib/assets/favicon.png';
 	import '../app.css';
 	import { page } from '$app/state';
 	import SiteHeader from '$lib/components/SiteHeader.svelte';
@@ -19,7 +19,7 @@
 </script>
 
 <svelte:head>
-	<link rel="icon" href={favicon} />
+	<link rel="icon" type="image/png" href={favicon} />
 </svelte:head>
 
 {#if !isAdmin}
