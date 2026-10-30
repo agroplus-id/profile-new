@@ -1,4 +1,4 @@
-import { collection, doc, documentId, getDoc, getDocs, limit, orderBy, query, where } from 'firebase/firestore';
+import { collection, doc, documentId, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '$lib/firebase';
 import { withDefaults, type Batch } from '$lib/batch';
 import { fetchImages, imageKeys } from '$lib/batch-images';
@@ -21,9 +21,10 @@ export async function resolvePackage(rawCode: string): Promise<{ batchId: string
 	const [, prefix, digits] = m;
 	const n = Number(digits);
 	const snap = await getDocs(
-		query(collection(db, 'batches'), where(documentId(), '>=', prefix + '0'.repeat(digits.length)), where(documentId(), '<=', code), orderBy(documentId(), 'desc'), limit(1))
+		query(collection(db, 'batches'), where(documentId(), '>=', prefix + '0'.repeat(digits.length)), where(documentId(), '<=', code))
 	);
-	const hit = snap.docs[0];
+	// Tanpa orderBy agar tidak perlu indeks komposit; rentangnya hanya batch dengan awalan sama.
+	const hit = snap.docs.sort((a, b) => b.id.localeCompare(a.id))[0];
 	if (!hit) return null;
 	const start = Number(hit.id.slice(prefix.length));
 	const total = Math.max(1, Number((hit.data() as { totalItems?: number }).totalItems ?? 1));
