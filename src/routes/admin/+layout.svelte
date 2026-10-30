@@ -15,7 +15,9 @@
 		{ href: '/admin/updates', label: 'Berita', icon: 'news' },
 		{ href: '/admin/media', label: 'Media', icon: 'media' },
 		{ href: '/admin/batches', label: 'Batch', icon: 'batch' },
-		{ href: '/admin/orders', label: 'Pesanan', icon: 'orders' }
+		{ href: '/admin/orders', label: 'Pesanan', icon: 'orders' },
+		{ href: '/admin/customers', label: 'Pelanggan', icon: 'team' },
+		{ href: '/admin/broadcast', label: 'Pengumuman', icon: 'mail' }
 	] as const;
 
 	let user = $state<User | null>(null);

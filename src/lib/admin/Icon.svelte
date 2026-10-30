@@ -36,12 +36,14 @@
 		| 'alignRight'
 		| 'codeblock'
 		| 'clearFmt'
-		| 'heading';
+		| 'heading'
+		| 'mail';
 
 	let { name, size = 20 }: { name: Name; size?: number } = $props();
 
 	// Ikon garis 24x24, gaya konsisten (stroke 1.8, ujung membulat).
 	const paths: Record<Name, string> = {
+		mail: 'M3 5h18a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zM2 6l10 7 10-7',
 		dashboard: 'M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z',
 		team: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
 		news: 'M4 4h13a1 1 0 0 1 1 1v14a2 2 0 0 0 2 2H6a2 2 0 0 1-2-2zM18 8h2a1 1 0 0 1 1 1v10a2 2 0 0 1-2 2M8 8h6M8 12h6M8 16h4',

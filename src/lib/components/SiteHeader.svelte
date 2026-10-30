@@ -3,6 +3,8 @@
 	import { onMount } from 'svelte';
 	import { pauseSmoothScroll, resumeSmoothScroll } from '$lib/smooth-scroll';
 	import logo from '$lib/assets/images/group-1233620.svg';
+	import { session, logout } from '$lib/account/session.svelte';
+	import { displayName, initialsOf } from '$lib/account/account';
 
 	type Item = { label: string; href: string; desc?: string };
 	type Menu = { id: string; label: string; items: Item[]; mega?: boolean };
@@ -43,6 +45,17 @@
 	let mobileOpen = $state(false);
 	let scrolled = $state(false);
 	let closeTimer: ReturnType<typeof setTimeout> | undefined;
+
+	// Akun pelanggan: ikon "Sign in" bila belum masuk, avatar + menu bila sudah.
+	const signedIn = $derived(!!session.user);
+	const fullName = $derived(displayName(session.profile));
+	const initials = $derived(initialsOf(fullName, session.user?.email ?? ''));
+
+	async function signOut() {
+		close();
+		await logout();
+		if (page.url.pathname.startsWith('/account')) location.assign('/');
+	}
 
 	const leftMenus = menus.filter((m) => m.id !== 'tools');
 	const rightMenus = menus.filter((m) => m.id === 'tools');
@@ -174,6 +187,46 @@
 					{#each rightMenus as m}
 						{@render menuItem(m, 3, 'right')}
 					{/each}
+					<li
+						class="vnav-li"
+						style="--i:4"
+						onmouseenter={() => signedIn && hoverOpen('acct')}
+						onmouseleave={hoverClose}
+					>
+						{#if signedIn}
+							<button
+								class="vnav-btn acct-btn"
+								class:is-open={open === 'acct'}
+								aria-expanded={open === 'acct'}
+								aria-haspopup="true"
+								aria-label="My account"
+								onclick={() => toggle('acct')}
+								onfocus={() => hoverOpen('acct')}
+							>
+								<span class="wipe"></span><span class="txt"><span class="avatar">{initials}</span></span>
+							</button>
+							<div class="vnav-dd align-right" class:is-open={open === 'acct'}>
+								<div class="vnav-dd-inner">
+									<div class="acct-id" style="--n:0">
+										<strong>{fullName || 'My account'}</strong>
+										<small>{session.user?.email}</small>
+									</div>
+									<a class="vnav-dd-link" href="/account" style="--n:1"><span class="dd-txt">My account</span></a>
+									<a class="vnav-dd-link" href="/account#koleksi" style="--n:2"><span class="dd-txt">My collection</span></a>
+									<a class="vnav-dd-link" href="/account#alamat" style="--n:3"><span class="dd-txt">Addresses</span></a>
+									<button class="vnav-dd-link as-btn" style="--n:4" onclick={signOut}><span class="dd-txt">Sign out</span></button>
+								</div>
+							</div>
+						{:else}
+							<a class="vnav-btn acct-btn" href="/login" aria-label="Sign in">
+								<span class="wipe"></span>
+								<span class="txt acct-in">
+									<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c1-4 4-6 8-6s7 2 8 6" /></svg>
+									Sign in
+								</span>
+							</a>
+						{/if}
+					</li>
 				</ul>
 				<a class="vnav-cta" href="/#contact">
 					<span class="wipe"></span><span class="txt">Contact Us</span>
@@ -210,6 +263,12 @@
 					</div>
 				</div>
 			{/each}
+			{#if signedIn}
+				<a class="m-link" href="/account" style="--i:{menus.length + 1}">My account</a>
+				<button class="m-link as-btn" style="--i:{menus.length + 2}" onclick={signOut}>Sign out</button>
+			{:else}
+				<a class="m-link" href="/login" style="--i:{menus.length + 1}">Sign in</a>
+			{/if}
 		</div>
 		<a class="m-cta" href="/#contact">Contact Us</a>
 	</div>
@@ -919,6 +978,57 @@
 			color: #fff;
 			font-weight: 600;
 		}
+	}
+
+	/* Akun */
+	.acct-btn {
+		min-width: 0;
+	}
+
+	.acct-in {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.avatar {
+		display: grid;
+		place-items: center;
+		width: 34px;
+		height: 34px;
+		border-radius: 50%;
+		background: var(--ink);
+		color: #fff;
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+	}
+
+	.acct-id {
+		display: grid;
+		gap: 2px;
+		margin: 0 6px 6px;
+		padding: 8px 18px 14px;
+		border-bottom: 1px solid rgba(37, 51, 15, 0.12);
+	}
+
+	.acct-id small {
+		opacity: 0.65;
+		font-size: 0.8rem;
+	}
+
+	.as-btn {
+		width: 100%;
+		border: 0;
+		background: none;
+		color: inherit;
+		font: inherit;
+		text-align: left;
+		cursor: pointer;
+	}
+
+	.m-link.as-btn {
+		justify-content: flex-start;
 	}
 
 	@media (prefers-reduced-motion: reduce) {

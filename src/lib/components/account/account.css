@@ -1,0 +1,535 @@
+/* Tampilan akun pelanggan (login, onboarding, akun saya). Mengikuti palet situs: hijau sage + tinta hijau tua. */
+
+.ac-page,
+.ac-overlay {
+	--ink: #25330f;
+	--mute: #5f6e4e;
+	--sage: #849962;
+	--deep: #55683d;
+	--wipe: #cddcae;
+	--line: rgba(37, 51, 15, 0.14);
+	--ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ac-page {
+	min-height: calc(100svh - 88px);
+	padding: clamp(20px, 4vw, 56px) clamp(16px, 5vw, 80px) 96px;
+	background: #f0f3f1;
+	color: var(--ink);
+}
+
+.ac-narrow {
+	width: min(100%, 560px);
+	margin: 0 auto;
+}
+
+.ac-wide {
+	width: min(100%, 1040px);
+	margin: 0 auto;
+}
+
+/* Animasi masuk bertahap: tiap elemen memakai --d (urutan) */
+.ac-rise {
+	animation: ac-rise 0.9s var(--ease) both;
+	animation-delay: calc(var(--d, 0) * 80ms + 80ms);
+}
+
+@keyframes ac-rise {
+	from {
+		opacity: 0;
+		transform: translateY(26px);
+	}
+}
+
+.ac-title {
+	margin: 0;
+	color: var(--sage);
+	font-size: clamp(2rem, 4.4vw, 3.2rem);
+	font-weight: 700;
+	line-height: 1.05;
+	letter-spacing: -0.035em;
+}
+
+.ac-title.sm {
+	font-size: clamp(1.6rem, 3vw, 2.2rem);
+}
+
+.ac-sub {
+	margin: 12px 0 0;
+	color: var(--mute);
+	font-size: 0.98rem;
+	line-height: 1.6;
+}
+
+.ac-card {
+	padding: clamp(20px, 3vw, 36px);
+	border: 1px solid rgba(37, 51, 15, 0.08);
+	border-radius: 24px;
+	background: #fff;
+	box-shadow: 0 18px 48px rgba(37, 51, 15, 0.06);
+}
+
+.ac-h2 {
+	margin: 0;
+	font-size: 1.2rem;
+	font-weight: 700;
+	letter-spacing: -0.01em;
+}
+
+.ac-muted {
+	color: var(--mute);
+	font-size: 0.9rem;
+	line-height: 1.55;
+}
+
+/* ───── Form ───── */
+.ac-form {
+	display: grid;
+	gap: 16px;
+}
+
+.ac-field {
+	display: grid;
+	gap: 7px;
+	font-size: 0.86rem;
+	font-weight: 600;
+}
+
+.ac-field small {
+	color: var(--mute);
+	font-size: 0.78rem;
+	font-weight: 400;
+}
+
+.ac-row {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.ac-input {
+	width: 100%;
+	padding: 13px 16px;
+	border: 1px solid var(--line);
+	border-radius: 14px;
+	background: #fff;
+	color: var(--ink);
+	font: inherit;
+	font-size: 0.95rem;
+	font-weight: 400;
+	transition:
+		border-color 0.25s ease,
+		box-shadow 0.25s ease;
+}
+
+.ac-input::placeholder {
+	color: #9aa58a;
+}
+
+.ac-input:focus {
+	border-color: var(--sage);
+	outline: 0;
+	box-shadow: 0 0 0 4px rgba(132, 153, 98, 0.22);
+}
+
+.ac-input.bad {
+	border-color: #c0392b;
+}
+
+.ac-pw {
+	position: relative;
+}
+
+.ac-pw .ac-input {
+	padding-right: 48px;
+}
+
+.ac-eye {
+	position: absolute;
+	top: 50%;
+	right: 6px;
+	display: grid;
+	place-items: center;
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	translate: 0 -50%;
+	border: 0;
+	border-radius: 10px;
+	background: none;
+	color: var(--mute);
+	cursor: pointer;
+}
+
+.ac-eye:hover {
+	color: var(--ink);
+}
+
+.ac-phone {
+	display: grid;
+	grid-template-columns: 112px minmax(0, 1fr);
+	gap: 10px;
+}
+
+.ac-check {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	font-size: 0.92rem;
+	line-height: 1.5;
+	cursor: pointer;
+}
+
+.ac-check input {
+	flex: none;
+	width: 20px;
+	height: 20px;
+	margin: 2px 0 0;
+	accent-color: var(--deep);
+}
+
+.ac-check a,
+.ac-link {
+	color: var(--deep);
+	font-weight: 600;
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.ac-link-btn {
+	padding: 0;
+	border: 0;
+	background: none;
+	cursor: pointer;
+}
+
+/* ───── Tombol: hover "wipe" seperti navbar ───── */
+.ac-btn {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	min-height: 48px;
+	padding: 0 24px;
+	overflow: hidden;
+	isolation: isolate;
+	border: 1px solid var(--ink);
+	border-radius: 14px;
+	background: var(--ink);
+	color: #fff;
+	font: inherit;
+	font-size: 0.95rem;
+	font-weight: 600;
+	cursor: pointer;
+	transition:
+		color 0.4s var(--ease),
+		opacity 0.3s ease,
+		transform 0.4s var(--ease);
+}
+
+.ac-btn::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	background: var(--deep);
+	transform: translateX(-101%);
+	transition: transform 0.55s var(--ease);
+}
+
+.ac-btn:hover:not(:disabled)::before {
+	transform: translateX(0);
+}
+
+.ac-btn:active:not(:disabled) {
+	transform: scale(0.98);
+}
+
+.ac-btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+
+.ac-btn.ghost {
+	border-color: var(--line);
+	background: #fff;
+	color: var(--ink);
+}
+
+.ac-btn.ghost::before {
+	background: var(--wipe);
+}
+
+.ac-btn.danger {
+	border-color: rgba(192, 57, 43, 0.4);
+	background: #fff;
+	color: #b03a2e;
+}
+
+.ac-btn.danger::before {
+	background: #fbe4e1;
+}
+
+.ac-btn.sm {
+	min-height: 40px;
+	padding: 0 16px;
+	border-radius: 12px;
+	font-size: 0.85rem;
+}
+
+.ac-btn.block {
+	width: 100%;
+}
+
+.ac-btn:focus-visible,
+.ac-input:focus-visible {
+	outline: 2px solid var(--sage);
+	outline-offset: 2px;
+}
+
+.ac-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+/* ───── Elemen kecil ───── */
+.ac-divider {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin: 4px 0;
+	color: var(--mute);
+	font-size: 0.8rem;
+}
+
+.ac-divider::before,
+.ac-divider::after {
+	content: '';
+	flex: 1;
+	height: 1px;
+	background: var(--line);
+}
+
+.ac-alert {
+	padding: 12px 16px;
+	border-radius: 14px;
+	background: #fbe4e1;
+	color: #8e2a20;
+	font-size: 0.88rem;
+	line-height: 1.5;
+}
+
+.ac-alert.ok {
+	background: #e6f0d6;
+	color: #3d5226;
+}
+
+.ac-alert.info {
+	background: #e9f3ec;
+	color: #1d5a3b;
+}
+
+.ac-badge {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 12px;
+	border-radius: 999px;
+	background: #e6f0d6;
+	color: #3d5226;
+	font-size: 0.74rem;
+	font-weight: 700;
+	letter-spacing: 0.03em;
+}
+
+.ac-badge.gray {
+	background: #e6e9e2;
+	color: #5f6e4e;
+}
+
+.ac-badge.amber {
+	background: #fbefd2;
+	color: #8a5a07;
+}
+
+.ac-badge.blue {
+	background: #dfeaf6;
+	color: #24517e;
+}
+
+.ac-avatar {
+	display: grid;
+	flex: none;
+	place-items: center;
+	width: 72px;
+	height: 72px;
+	overflow: hidden;
+	border-radius: 50%;
+	background: var(--ink);
+	color: #fff;
+	font-size: 1.4rem;
+	font-weight: 700;
+}
+
+.ac-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* ───── Modal ───── */
+.ac-overlay {
+	position: fixed;
+	inset: 0;
+	z-index: 4000;
+	display: grid;
+	place-items: center;
+	padding: 20px;
+	background: rgba(24, 31, 14, 0.55);
+	backdrop-filter: blur(3px);
+	animation: ac-fade 0.35s ease both;
+}
+
+.ac-modal {
+	display: flex;
+	flex-direction: column;
+	width: min(100%, 520px);
+	max-height: min(100%, 880px);
+	overflow: hidden;
+	border-radius: 24px;
+	background: #fff;
+	color: var(--ink, #25330f);
+	box-shadow: 0 40px 90px rgba(10, 16, 4, 0.4);
+	animation: ac-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.ac-modal.wide {
+	width: min(100%, 680px);
+}
+
+.ac-modal-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 22px 28px;
+	border-bottom: 1px solid rgba(37, 51, 15, 0.1);
+}
+
+.ac-modal-head h3 {
+	margin: 0;
+	font-size: 1.2rem;
+	font-weight: 700;
+}
+
+.ac-x {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: none;
+	color: #25330f;
+	cursor: pointer;
+	transition: background-color 0.25s ease;
+}
+
+.ac-x:hover {
+	background: #e6ebe0;
+}
+
+.ac-modal-body {
+	flex: 1;
+	min-height: 0;
+	padding: 24px 28px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.ac-modal-foot {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 16px 28px 22px;
+	border-top: 1px solid rgba(37, 51, 15, 0.1);
+}
+
+.ac-modal-foot .need {
+	flex: 1 1 200px;
+	color: #5f6e4e;
+	font-size: 0.8rem;
+}
+
+@keyframes ac-fade {
+	from {
+		opacity: 0;
+	}
+}
+
+@keyframes ac-pop {
+	from {
+		opacity: 0;
+		transform: translateY(24px) scale(0.96);
+	}
+}
+
+@media (max-width: 640px) {
+	.ac-row {
+		grid-template-columns: 1fr;
+	}
+
+	/* Modal jadi lembar yang naik dari bawah di layar kecil */
+	.ac-overlay {
+		place-items: end center;
+		padding: 0;
+	}
+
+	.ac-modal,
+	.ac-modal.wide {
+		width: 100%;
+		max-height: 92svh;
+		border-radius: 24px 24px 0 0;
+		animation-name: ac-sheet;
+	}
+
+	.ac-modal-head {
+		padding: 18px 20px;
+	}
+
+	.ac-modal-body {
+		padding: 20px;
+	}
+
+	.ac-modal-foot {
+		padding: 14px 20px 20px;
+	}
+
+	.ac-actions .ac-btn {
+		flex: 1 1 auto;
+	}
+}
+
+@keyframes ac-sheet {
+	from {
+		opacity: 0.6;
+		transform: translateY(100%);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.ac-rise,
+	.ac-overlay,
+	.ac-modal {
+		animation: none;
+	}
+
+	.ac-btn::before {
+		transition: none;
+	}
+}
