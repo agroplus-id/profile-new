@@ -30,6 +30,7 @@
 	});
 </script>
 
+{#if flavorNotes.length}
 <section
 	class="flavors-section"
 	aria-labelledby="flavors-title"
@@ -51,6 +52,7 @@
 		</div>
 	</div>
 </section>
+{/if}
 
 <style>
 	.flavors-section {

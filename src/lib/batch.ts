@@ -112,6 +112,8 @@ export function withDefaults(data: Partial<Batch> | null | undefined): Batch {
 		out.mapPlace = '';
 		out.mapNote = '';
 		out.placePhotos = [];
+		// Cita rasa: tidak ada yang dipilih admin berarti tidak ada kartu (bukan semua kartu).
+		out.flavors = [];
 	}
 	// Batch lama menyimpan satu link toko (storeUrl); ubah jadi daftar toko.
 	const legacy = data as (Partial<Batch> & { storeUrl?: string }) | null | undefined;
