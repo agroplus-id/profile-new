@@ -1,6 +1,6 @@
 import { json, type RequestHandler } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
-import { adminFromRequest } from '$lib/server/admin-auth';
+import { checkAdmin } from '$lib/server/admin-auth';
 
 // Kirim pengumuman email ke pelanggan lewat Resend. Hanya admin (ADMIN_EMAILS) yang boleh memanggil.
 //
@@ -32,8 +32,9 @@ You are receiving this because you have an AgroPlus.ID account.
 }
 
 export const POST: RequestHandler = async ({ request, url }) => {
-	const admin = await adminFromRequest(request);
-	if (!admin) return json({ error: 'forbidden' }, { status: 403 });
+	const check = await checkAdmin(request);
+	if (!check.ok) return json({ error: 'forbidden', reason: check.reason }, { status: 403 });
+	const admin = check.email;
 
 	const key = env.RESEND_API_KEY;
 	const from = env.MAIL_FROM;

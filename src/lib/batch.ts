@@ -139,3 +139,5 @@ export function blankBatch(): Batch {
 }
 
 export const VERIFIED_KEY = 'coffeeid-verified';
+// Awalan nilai VERIFIED_KEY bila pelanggan masuk dengan kode kemasan (bukan kode pesanan).
+export const PACKAGE_PREFIX = 'PKG:';

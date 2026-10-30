@@ -3,7 +3,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { onAuthStateChanged, signInWithEmailAndPassword, signOut, type User } from 'firebase/auth';
-	import { auth } from '$lib/firebase';
+	import { collection, getDocs, limit, query } from 'firebase/firestore';
+	import { auth, db } from '$lib/firebase';
 	import Icon from '$lib/admin/Icon.svelte';
 	import { toast } from '$lib/admin/toast.svelte';
 
@@ -33,6 +34,8 @@
 	const initials = $derived((user?.email ?? 'A').slice(0, 2).toUpperCase());
 
 	let configMissing = $state(false);
+	// Akun yang login bukan admin menurut aturan Firestore (akun pelanggan bisa membuka /admin tapi tidak boleh menulis).
+	let notAdmin = $state(false);
 
 	onMount(() => {
 		// Tanpa konfigurasi Firebase di build ini, auth bernilai undefined — tampilkan penjelasan, bukan spinner.
@@ -41,8 +44,17 @@
 			ready = true;
 			return;
 		}
-		return onAuthStateChanged(auth, (u) => {
+		return onAuthStateChanged(auth, async (u) => {
 			user = u;
+			notAdmin = false;
+			if (u) {
+				try {
+					// Koleksi counters hanya boleh dibaca admin; permission-denied berarti bukan admin.
+					await getDocs(query(collection(db, 'counters'), limit(1)));
+				} catch (err) {
+					notAdmin = (err as { code?: string }).code === 'permission-denied';
+				}
+			}
 			ready = true;
 		});
 	});
@@ -78,6 +90,17 @@
 					Build ini tidak memuat variabel <code>VITE_FIREBASE_*</code>. Isi di Vercel → Settings → Environment
 					Variables (scope Production), lalu Redeploy.
 				</p>
+			</div>
+		</div>
+	{:else if notAdmin}
+		<div class="boot">
+			<div style="max-width: 460px; padding: 24px; text-align: center; line-height: 1.6">
+				<h2 style="margin: 0 0 8px">Akun ini bukan admin</h2>
+				<p style="margin: 0 0 16px; opacity: 0.75">
+					Anda masuk sebagai <strong>{user?.email}</strong>, yang tidak terdaftar sebagai admin di Firestore Rules.
+					Keluar lalu masuk dengan email admin.
+				</p>
+				<button class="adm-btn primary" onclick={() => signOut(auth)}>Keluar</button>
 			</div>
 		</div>
 	{:else if !user}

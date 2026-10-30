@@ -4,7 +4,8 @@
 	import { doc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
 	import { normalizeCode } from '$lib/admin/orders';
-	import { VERIFIED_KEY } from '$lib/batch';
+	import { PACKAGE_PREFIX, VERIFIED_KEY } from '$lib/batch';
+	import { resolvePackage } from '$lib/batch-load';
 
 	let orderCode = $state('');
 	let email = $state('');
@@ -16,14 +17,19 @@
 		isSubmitting = true;
 
 		let ok = false;
+		let key = normalizeCode(orderCode);
 		try {
-			// Kode pesanan = ID dokumen di koleksi "orders" (diisi admin lewat dashboard).
-			const snap = await getDoc(doc(db, 'orders', normalizeCode(orderCode)));
+			// 1) Kode pesanan = ID dokumen di koleksi "orders"; wajib cocok dengan email dan telepon.
+			const snap = await getDoc(doc(db, 'orders', key));
 			if (snap.exists()) {
 				const o = snap.data() as { email?: string; phone?: string };
 				ok =
 					(o.email ?? '').trim().toLowerCase() === email.trim().toLowerCase() &&
 					(o.phone ?? '').replace(/\D/g, '') === phone.replace(/\D/g, '');
+			} else if (await resolvePackage(key)) {
+				// 2) Kode kemasan (tercetak di bungkus): cukup kodenya, tanpa email dan telepon.
+				ok = true;
+				key = PACKAGE_PREFIX + key;
 			}
 		} catch (err) {
 			console.warn('Gagal memeriksa pesanan', err);
@@ -40,7 +46,7 @@
 				confirmButtonColor: '#55683d'
 			});
 			try {
-				sessionStorage.setItem(VERIFIED_KEY, normalizeCode(orderCode));
+				sessionStorage.setItem(VERIFIED_KEY, key);
 			} catch {
 				/* storage tidak tersedia */
 			}
@@ -49,7 +55,7 @@
 			Swal.fire({
 				icon: 'error',
 				title: 'Data Tidak Ditemukan',
-				text: 'Kode pesanan, email, atau nomor telepon yang Anda masukkan salah. Silakan periksa kembali data Anda!',
+				text: 'Kode tidak dikenali. Jika memakai kode pesanan, pastikan email dan nomor telepon juga benar. Kode kemasan cukup diisi sendiri.',
 				confirmButtonText: 'Coba Lagi',
 				confirmButtonColor: '#55683d'
 			});
@@ -64,17 +70,17 @@
 
 		<form class="coffee-id-form" onsubmit={handleSubmit}>
 			<div class="form-field">
-				<label for="order-code">Order Code</label>
+				<label for="order-code">Order Code or Package Code</label>
 				<input
 					id="order-code"
 					type="text"
 					bind:value={orderCode}
-					placeholder=""
+					placeholder="AGP-XXX-00000000-A001"
 					required
 					autocomplete="off"
 				/>
 				<span class="field-hint"
-					>You can find this in your order confirmation email or checkout success page.</span
+					>Your order code is in the confirmation email. The package code is printed on the coffee package.</span
 				>
 			</div>
 
@@ -85,10 +91,9 @@
 					type="email"
 					bind:value={email}
 					placeholder=""
-					required
 					autocomplete="email"
 				/>
-				<span class="field-hint">The email address used at checkout.</span>
+				<span class="field-hint">The email address used at checkout. Not needed with a package code.</span>
 			</div>
 
 			<div class="form-field">
@@ -98,11 +103,10 @@
 					type="tel"
 					bind:value={phone}
 					placeholder=""
-					required
 					autocomplete="tel"
 				/>
 				<span class="field-hint"
-					>The phone number of the recipient or the one used at checkout.</span
+					>The phone number used at checkout. Not needed with a package code.</span
 				>
 			</div>
 

@@ -15,13 +15,26 @@ export async function emailFromToken(idToken: string): Promise<{ email: string; 
 	return u?.email ? { email: u.email.toLowerCase(), verified: !!u.emailVerified } : null;
 }
 
-// Hanya email di ADMIN_EMAILS (dan sudah terverifikasi) yang dianggap admin.
-export async function adminFromRequest(request: Request): Promise<string | null> {
+export type AdminCheck = { ok: true; email: string } | { ok: false; reason: 'no_token' | 'bad_token' | 'admin_emails_not_set' | 'not_in_admin_emails' | 'email_not_verified' };
+
+// Hanya email di ADMIN_EMAILS (dan sudah terverifikasi) yang dianggap admin. Alasan penolakan dikembalikan
+// supaya admin yang sah tahu apa yang perlu dibetulkan.
+export async function checkAdmin(request: Request): Promise<AdminCheck> {
 	const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '') ?? '';
+	if (!token) return { ok: false, reason: 'no_token' };
 	const who = await emailFromToken(token);
+	if (!who) return { ok: false, reason: 'bad_token' };
 	const admins = (env.ADMIN_EMAILS ?? '')
 		.split(',')
 		.map((e) => e.trim().toLowerCase())
 		.filter(Boolean);
-	return who && who.verified && admins.includes(who.email) ? who.email : null;
+	if (!admins.length) return { ok: false, reason: 'admin_emails_not_set' };
+	if (!admins.includes(who.email)) return { ok: false, reason: 'not_in_admin_emails' };
+	if (!who.verified) return { ok: false, reason: 'email_not_verified' };
+	return { ok: true, email: who.email };
+}
+
+export async function adminFromRequest(request: Request): Promise<string | null> {
+	const r = await checkAdmin(request);
+	return r.ok ? r.email : null;
 }

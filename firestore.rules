@@ -33,9 +33,10 @@ service cloud.firestore {
     // Pesanan CoffeeID: pelanggan hanya bisa mengambil SATU dokumen bila tahu kode pesanannya
     // (kode = ID dokumen). Daftar lengkap dan semua perubahan hanya untuk admin.
     // Batch kopi: dibaca satu per satu lewat kode batch dari data pesanan; daftar & ubah hanya admin.
+    // Daftar dibuka untuk publik agar kode kemasan bisa dicari (isi batch memang sudah tampil di halaman publik).
     match /batches/{code} {
-      allow get: if true;
-      allow list, create, update, delete: if isAdmin();
+      allow get, list: if true;
+      allow create, update, delete: if isAdmin();
     }
 
     match /orders/{code} {

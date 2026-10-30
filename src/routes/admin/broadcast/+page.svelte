@@ -21,7 +21,26 @@
 
 	// Penerima: akun terverifikasi yang mengizinkan pengumuman.
 	const audience = $derived(customers.filter((c) => c.email && c.emailVerified && c.notify?.updates !== false));
-	const ready = $derived(subject.trim().length > 2 && message.trim().length > 5);
+	// Tombol hanya dipakai bila teks dan tautan terisi dua-duanya, dan tautannya sah.
+	const linkProblem = $derived.by(() => {
+		const label = ctaLabel.trim();
+		const url = ctaUrl.trim();
+		if (!label && !url) return '';
+		if (!label || !url) return 'Isi teks tombol dan tautannya, atau kosongkan keduanya.';
+		return url.startsWith('/') || /^https?:\/\/\S+$/i.test(url) ? '' : 'Tautan harus diawali / (halaman situs) atau https://';
+	});
+	const ready = $derived(subject.trim().length >= 3 && message.trim().length >= 3 && !linkProblem);
+	const why = $derived(
+		subject.trim().length < 3 ? 'Isi subjek (minimal 3 karakter).' : message.trim().length < 3 ? 'Isi pesan (minimal 3 karakter).' : linkProblem
+	);
+
+	const REASONS: Record<string, string> = {
+		admin_emails_not_set: 'ADMIN_EMAILS belum diisi di environment server (Vercel). Isi dengan email admin lalu redeploy.',
+		not_in_admin_emails: 'Email akun ini tidak ada di ADMIN_EMAILS di environment server.',
+		email_not_verified: 'Email akun admin belum terverifikasi di Firebase Authentication.',
+		bad_token: 'Sesi login tidak dikenali server. Keluar lalu masuk lagi.',
+		no_token: 'Sesi login tidak terkirim. Muat ulang halaman lalu coba lagi.'
+	};
 
 	const PLACEHOLDER = 'Halo!\n\nKami baru saja merilis batch terbaru.\n\nPisahkan paragraf dengan baris kosong.';
 
@@ -53,12 +72,13 @@
 					recipients: test ? [] : audience.map((c) => c.email)
 				})
 			});
-			const out = (await res.json().catch(() => ({}))) as { sent?: number; failed?: number; error?: string };
+			const out = (await res.json().catch(() => ({}))) as { sent?: number; failed?: number; error?: string; reason?: string };
 			if (res.status === 501) {
 				notConfigured = true;
 				notify('Pengiriman email belum dikonfigurasi (RESEND_API_KEY dan MAIL_FROM).', true);
 				return;
 			}
+			if (res.status === 403) throw new Error(REASONS[out.reason ?? ''] ?? 'Akses ditolak');
 			if (!res.ok) throw new Error(out.error ?? `HTTP ${res.status}`);
 			notify(test ? 'Email tes terkirim ke email Anda' : `Terkirim ke ${out.sent} pelanggan${out.failed ? `, gagal ${out.failed}` : ''}`);
 			if (!test) {
@@ -116,6 +136,7 @@
 				</button>
 			{/if}
 		</div>
+		{#if why}<p class="hint warnline">{why}</p>{/if}
 		<p class="hint">
 			{#if loading}Memuat penerima…{:else}Penerima: {audience.length} dari {customers.length} akun (hanya email terverifikasi yang mengizinkan pengumuman). Selalu kirim tes dulu.{/if}
 		</p>
@@ -182,6 +203,10 @@
 		margin: 0;
 		color: var(--muted);
 		font-size: 0.82rem;
+	}
+
+	.warnline {
+		color: #8e2a20;
 	}
 
 	.warn {

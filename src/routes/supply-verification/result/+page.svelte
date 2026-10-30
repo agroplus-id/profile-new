@@ -3,8 +3,8 @@
 	import { goto } from '$app/navigation';
 	import { doc, getDoc } from 'firebase/firestore';
 	import { db } from '$lib/firebase';
-	import { VERIFIED_KEY, withDefaults, type Batch } from '$lib/batch';
-	import { loadBatch } from '$lib/batch-load';
+	import { PACKAGE_PREFIX, VERIFIED_KEY, withDefaults, type Batch } from '$lib/batch';
+	import { loadBatch, resolvePackage } from '$lib/batch-load';
 	import type { Order } from '$lib/admin/orders';
 	import BatchPage from '$lib/components/bumikopi/BatchPage.svelte';
 
@@ -25,10 +25,18 @@
 			return;
 		}
 		try {
-			const orderSnap = await getDoc(doc(db, 'orders', code));
-			const order = orderSnap.exists() ? (orderSnap.data() as Order & { itemNumber?: number }) : null;
-			itemNumber = order?.itemNumber ?? 1;
-			const loaded = order?.batch ? await loadBatch(order.batch) : null;
+			let batchId = '';
+			if (code.startsWith(PACKAGE_PREFIX)) {
+				const pkg = await resolvePackage(code.slice(PACKAGE_PREFIX.length));
+				batchId = pkg?.batchId ?? '';
+				itemNumber = pkg?.itemNumber ?? 1;
+			} else {
+				const orderSnap = await getDoc(doc(db, 'orders', code));
+				const order = orderSnap.exists() ? (orderSnap.data() as Order & { itemNumber?: number }) : null;
+				itemNumber = order?.itemNumber ?? 1;
+				batchId = order?.batch ?? '';
+			}
+			const loaded = batchId ? await loadBatch(batchId) : null;
 			batch = loaded?.batch ?? withDefaults(null);
 			images = loaded?.images ?? {};
 		} catch (err) {
