@@ -4,7 +4,7 @@
 	import { listAll, formatDate } from '$lib/admin/db';
 	import { ORDER_STATUS, type Order } from '$lib/admin/orders';
 	import { notify } from '$lib/admin/toast.svelte';
-	import { countAll, seedBatch, seedPartners, seedPress, seedTeam, seedUpdates, type Progress, type SeedCounts } from '$lib/admin/seed';
+	import { countAll, seedBatch, seedPartners, seedPress, seedTeam, seedUpdates, seedTestimonials, type Progress, type SeedCounts } from '$lib/admin/seed';
 
 	type Row = { id: string };
 	type UpdateRow = Row & { title: string; published?: boolean; date?: string };
@@ -13,6 +13,7 @@
 	let teamCount = $state(0);
 	let updates = $state<UpdateRow[]>([]);
 	let allOrders = $state<(Order & Row)[]>([]);
+	let testimonialsCount = $state(0);
 
 	// Filter periode untuk statistik pesanan
 	const PERIODS = [
@@ -30,10 +31,11 @@
 	let failed = $state(false);
 
 	// ───── Impor data bawaan: menyalin isi situs yang sekarang tertulis di kode ke Firestore ─────
-	type Item = { key: keyof SeedCounts; label: string; hint: string; run: (p: Progress) => Promise<unknown>; icon: 'team' | 'news' | 'media' | 'batch' };
+	type Item = { key: keyof SeedCounts; label: string; hint: string; run: (p: Progress) => Promise<unknown>; icon: 'team' | 'news' | 'media' | 'batch' | 'quote' };
 	const ITEMS: Item[] = [
 		{ key: 'team', label: 'Tim', hint: '17 anggota beserta foto', run: seedTeam, icon: 'team' },
 		{ key: 'updates', label: 'Berita', hint: '6 berita contoh di bagian Updates', run: seedUpdates, icon: 'news' },
+		{ key: 'testimonials', label: 'Testimoni', hint: '3 kisah kolaborasi & studi kasus mitra', run: seedTestimonials, icon: 'quote' },
 		{ key: 'press', label: 'In the press', hint: '3 kutipan contoh', run: seedPress, icon: 'media' },
 		{ key: 'partners', label: 'Logo mitra', hint: '6 logo mitra', run: seedPartners, icon: 'media' },
 		{ key: 'batches', label: 'Batch contoh', hint: 'Bumi Kopi Liberica (AGP-BMK-17062026-L001)', run: seedBatch, icon: 'batch' }
@@ -68,15 +70,17 @@
 
 	onMount(async () => {
 		refreshCounts();
-		const [t, u, o] = await Promise.allSettled([
+		const [t, u, o, tm] = await Promise.allSettled([
 			listAll<object>('team'),
 			listAll<UpdateRow>('updates'),
-			listAll<Order>('orders')
+			listAll<Order>('orders'),
+			listAll<object>('testimonials')
 		]);
 		if (t.status === 'fulfilled') teamCount = t.value.length;
 		if (u.status === 'fulfilled') updates = u.value;
 		if (o.status === 'fulfilled') allOrders = o.value;
-		failed = [t, u, o].some((r) => r.status === 'rejected');
+		if (tm.status === 'fulfilled') testimonialsCount = tm.value.length;
+		failed = [t, u, o, tm].some((r) => r.status === 'rejected');
 		loading = false;
 	});
 
@@ -124,11 +128,15 @@
 		<span class="ico"><Icon name="news" /></span>
 		<div><small>Berita terbit</small><strong>{loading ? '–' : published}</strong><em>{updates.length - published} draf</em></div>
 	</a>
-	<a class="adm-card stat adm-rise" style="--i:2" href="/admin/orders">
+	<a class="adm-card stat adm-rise" style="--i:2" href="/admin/testimonials">
+		<span class="ico"><Icon name="quote" /></span>
+		<div><small>Cerita testimoni</small><strong>{loading ? '–' : testimonialsCount}</strong></div>
+	</a>
+	<a class="adm-card stat adm-rise" style="--i:3" href="/admin/orders">
 		<span class="ico"><Icon name="orders" /></span>
 		<div><small>Pesanan CoffeeID</small><strong>{loading ? '–' : orders.length}</strong></div>
 	</a>
-	<a class="adm-card stat adm-rise" style="--i:3" href="/admin/orders">
+	<a class="adm-card stat adm-rise" style="--i:4" href="/admin/orders">
 		<span class="ico amber"><Icon name="refresh" /></span>
 		<div>
 			<small>Perlu diproses</small>

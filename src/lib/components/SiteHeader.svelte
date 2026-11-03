@@ -176,9 +176,17 @@
 							<span class="wipe"></span><span class="txt">Home</span>
 						</a>
 					</li>
-					{#each leftMenus as m, i}
-						{@render menuItem(m, i + 1, 'left')}
-					{/each}
+					{@render menuItem(menus[0], 1, 'left')}
+					<li class="vnav-li" style="--i:2">
+						<a
+							class="vnav-btn"
+							href="/testimonials"
+							data-active={page.url.pathname.startsWith('/testimonials')}
+						>
+							<span class="wipe"></span><span class="txt">Testimonials</span>
+						</a>
+					</li>
+					{@render menuItem(menus[1], 3, 'left')}
 				</ul>
 			</nav>
 
@@ -249,25 +257,52 @@
 	<div class="vnav-mobile" class:is-open={mobileOpen} aria-hidden={!mobileOpen}>
 		<div class="vnav-mobile-inner">
 			<a class="m-link" href="/" style="--i:0">Home</a>
-			{#each menus as m, i}
-				<div class="m-group" style="--i:{i + 1}">
-					<button class="m-link m-toggle" onclick={() => toggle(m.id)} aria-expanded={open === m.id}>
-						{m.label}<span class="m-plus" class:is-open={open === m.id}></span>
-					</button>
-					<div class="m-sub" class:is-open={open === m.id}>
-						<div>
-							{#each m.items as it}
-								<a href={it.href}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
-							{/each}
-						</div>
+			<!-- Projects -->
+			<div class="m-group" style="--i:1">
+				<button class="m-link m-toggle" onclick={() => toggle('projects')} aria-expanded={open === 'projects'}>
+					Projects<span class="m-plus" class:is-open={open === 'projects'}></span>
+				</button>
+				<div class="m-sub" class:is-open={open === 'projects'}>
+					<div>
+						{#each menus[0].items as it}
+							<a href={it.href}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
+						{/each}
 					</div>
 				</div>
-			{/each}
+			</div>
+			<!-- Testimonials -->
+			<a class="m-link" href="/testimonials" style="--i:2">Testimonials</a>
+			<!-- About us -->
+			<div class="m-group" style="--i:3">
+				<button class="m-link m-toggle" onclick={() => toggle('about')} aria-expanded={open === 'about'}>
+					About us<span class="m-plus" class:is-open={open === 'about'}></span>
+				</button>
+				<div class="m-sub" class:is-open={open === 'about'}>
+					<div>
+						{#each menus[1].items as it}
+							<a href={it.href}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
+						{/each}
+					</div>
+				</div>
+			</div>
+			<!-- Tools -->
+			<div class="m-group" style="--i:4">
+				<button class="m-link m-toggle" onclick={() => toggle('tools')} aria-expanded={open === 'tools'}>
+					Tools<span class="m-plus" class:is-open={open === 'tools'}></span>
+				</button>
+				<div class="m-sub" class:is-open={open === 'tools'}>
+					<div>
+						{#each menus[2].items as it}
+							<a href={it.href}>{it.label}</a>
+						{/each}
+					</div>
+				</div>
+			</div>
 			{#if signedIn}
-				<a class="m-link" href="/account" style="--i:{menus.length + 1}">My account</a>
-				<button class="m-link as-btn" style="--i:{menus.length + 2}" onclick={signOut}>Sign out</button>
+				<a class="m-link" href="/account" style="--i:5">My account</a>
+				<button class="m-link as-btn" style="--i:6" onclick={signOut}>Sign out</button>
 			{:else}
-				<a class="m-link" href="/login" style="--i:{menus.length + 1}">Sign in</a>
+				<a class="m-link" href="/login" style="--i:5">Sign in</a>
 			{/if}
 		</div>
 		<a class="m-cta" href="/#contact">Contact Us</a>

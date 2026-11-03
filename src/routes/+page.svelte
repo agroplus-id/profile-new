@@ -4,6 +4,7 @@
 	import MissionSection from '$lib/components/MissionSection.svelte';
 	import NewsSections from '$lib/components/NewsSections.svelte';
 	import ProductShowcase from '$lib/components/ProductShowcase.svelte';
+	import TestimonialSection from '$lib/components/TestimonialSection.svelte';
 	import ProofSection from '$lib/components/ProofSection.svelte';
 	import SiteFooter from '$lib/components/SiteFooter.svelte';
 </script>
@@ -18,6 +19,7 @@
 	<IntroSection />
 	<ProofSection />
 	<ProductShowcase />
+	<TestimonialSection />
 	<MissionSection />
 	<NewsSections />
 	<SiteFooter />

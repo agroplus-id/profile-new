@@ -9,11 +9,12 @@ service cloud.firestore {
     }
 
     // Konten publik: boleh dibaca siapa saja, hanya admin yang boleh mengubah.
-    match /team/{id}     { allow read: if true; allow write: if isAdmin(); }
-    match /updates/{id}  { allow read: if true; allow write: if isAdmin(); }
-    match /settings/{id} { allow get: if true; allow list, write: if isAdmin(); }
-    match /press/{id}    { allow read: if true; allow write: if isAdmin(); }
-    match /partners/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /team/{id}         { allow read: if true; allow write: if isAdmin(); }
+    match /updates/{id}      { allow read: if true; allow write: if isAdmin(); }
+    match /testimonials/{id} { allow read: if true; allow write: if isAdmin(); }
+    match /settings/{id}     { allow get: if true; allow list, write: if isAdmin(); }
+    match /press/{id}        { allow read: if true; allow write: if isAdmin(); }
+    match /partners/{id}     { allow read: if true; allow write: if isAdmin(); }
 
     // Gambar batch (hero, foto pendukung, paspor, foto lokasi): dibaca satu per satu; ubah hanya admin.
     match /batchImages/{id} {
@@ -21,8 +22,12 @@ service cloud.firestore {
       allow list, create, update, delete: if isAdmin();
     }
 
-    // Isi artikel berita (HTML): dibaca per artikel; daftar dan ubah hanya admin.
+    // Isi artikel berita & cerita testimoni (HTML): dibaca per artikel; daftar dan ubah hanya admin.
     match /articles/{id} {
+      allow get: if true;
+      allow list, create, update, delete: if isAdmin();
+    }
+    match /testimonialArticles/{id} {
       allow get: if true;
       allow list, create, update, delete: if isAdmin();
     }

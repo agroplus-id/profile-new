@@ -4,6 +4,7 @@ import { nextPassportNumber } from '$lib/admin/passport';
 import { seedFromStatic } from '$lib/team-store';
 import { DEFAULT_BATCH } from '$lib/batch';
 import { partnerLogos, pressItems, updates as sampleUpdates } from '$lib/data/home';
+import { defaultTestimonials } from '$lib/data/testimonials';
 
 // Impor data bawaan situs (yang sekarang tertulis di kode) ke Firestore agar bisa diubah dari dashboard.
 // Tiap fungsi hanya dipanggil saat koleksinya masih kosong (diatur oleh halaman yang memanggilnya).
@@ -66,6 +67,17 @@ export async function seedUpdates(progress?: Progress) {
 	}
 }
 
+export async function seedTestimonials(progress?: Progress) {
+	for (let i = 0; i < defaultTestimonials.length; i++) {
+		progress?.(`Mengimpor testimoni ${i + 1}/${defaultTestimonials.length}…`);
+		const { id, html, ...data } = defaultTestimonials[i];
+		await createDocWithId('testimonials', id, data);
+		if (html) {
+			await createDocWithId('testimonialArticles', id, { html });
+		}
+	}
+}
+
 // Batch contoh = isi halaman Bumi Kopi yang sekarang (Liberica, Wonosalam), lengkap dengan data paspor.
 export async function seedBatch(progress?: Progress) {
 	progress?.('Membuat batch contoh…');
@@ -85,10 +97,12 @@ export async function seedBatch(progress?: Progress) {
 	return id;
 }
 
-export type SeedCounts = Record<'team' | 'press' | 'partners' | 'updates' | 'batches', number>;
+export type SeedCounts = Record<'team' | 'press' | 'partners' | 'updates' | 'testimonials' | 'batches', number>;
 
 export async function countAll(): Promise<SeedCounts> {
 	const count = (col: string) => listAll<object>(col).then((r) => r.length).catch(() => 0);
-	const [team, press, partners, updates, batches] = await Promise.all(['team', 'press', 'partners', 'updates', 'batches'].map(count));
-	return { team, press, partners, updates, batches };
+	const [team, press, partners, updates, testimonials, batches] = await Promise.all(
+		['team', 'press', 'partners', 'updates', 'testimonials', 'batches'].map(count)
+	);
+	return { team, press, partners, updates, testimonials, batches };
 }
