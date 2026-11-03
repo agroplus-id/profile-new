@@ -49,9 +49,16 @@
 				</div>
 
 				<div class="testi-meta">
-					<span class="category-tag">{item.category || 'Client Story'}</span>
-					<i class="meta-dot"></i>
-					<span class="meta-date">{formatDate(item.date)}</span>
+					<div class="meta-tags">
+						<span class="category-tag">{item.category || 'Client Story'}</span>
+						<i class="meta-dot"></i>
+						<span class="meta-date">{formatDate(item.date)}</span>
+					</div>
+					{#if item.rating}
+						<div class="rating-stars" aria-label={`Rating ${item.rating} dari 5 bintang`} title={`Rating: ${item.rating} dari 5 bintang`}>
+							{#each Array(Math.min(5, Math.max(1, Number(item.rating) || 5))) as _}★{/each}
+						</div>
+					{/if}
 				</div>
 
 				<h3 class="testi-title">{item.title}</h3>
@@ -62,10 +69,10 @@
 
 				<div class="testi-author">
 					<strong class="author-name">{item.clientName}</strong>
-					<span class="author-role">{item.clientRole}{#if item.clientCompany} · {item.clientCompany}{/if}</span>
+					{#if item.clientRole || item.clientCompany}
+						<span class="author-role">{item.clientRole}{#if item.clientCompany} · {item.clientCompany}{/if}</span>
+					{/if}
 				</div>
-
-				<a class="card-link" href="/testimonials/{item.id}" aria-label={`Read testimonial by ${item.clientName}`}></a>
 			</article>
 		{/each}
 	</div>
@@ -204,17 +211,34 @@
 	.testi-meta {
 		display: flex;
 		align-items: center;
-		gap: 10px;
-		margin-bottom: 14px;
+		justify-content: space-between;
+		gap: 8px;
+		margin-bottom: 12px;
+		flex-wrap: wrap;
+	}
+
+	.meta-tags {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		font-size: 0.78rem;
 		font-weight: 700;
 		color: #55683d;
 	}
 
+	.rating-stars {
+		color: #f59e0b;
+		font-size: 0.95rem;
+		letter-spacing: 1.5px;
+		display: inline-flex;
+		align-items: center;
+		line-height: 1;
+	}
+
 	.category-tag {
 		background: rgba(85, 104, 61, 0.12);
 		color: #384620;
-		padding: 4px 10px;
+		padding: 3px 10px;
 		border-radius: 999px;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -233,17 +257,23 @@
 	}
 
 	.testi-title {
-		margin: 0 0 12px;
+		margin: 0 0 10px;
 		color: #25330f;
 		font-size: clamp(1.1rem, 1.25vw, 1.35rem);
 		line-height: 1.28;
 		font-weight: 700;
+		display: -webkit-box;
+		-webkit-line-clamp: 2;
+		line-clamp: 2;
+		-webkit-box-orient: vertical;
+		overflow: hidden;
+		word-break: break-word;
 	}
 
 	.testi-quote {
-		margin: 0 0 20px;
+		margin: 0 0 18px;
 		font-size: 0.92rem;
-		line-height: 1.6;
+		line-height: 1.55;
 		color: #45552d;
 		font-style: italic;
 		display: -webkit-box;
@@ -251,6 +281,7 @@
 		line-clamp: 3;
 		-webkit-box-orient: vertical;
 		overflow: hidden;
+		word-break: break-word;
 	}
 
 	.testi-author {
@@ -272,12 +303,6 @@
 		font-size: 0.8rem;
 		color: #6a7b54;
 		line-height: 1.35;
-	}
-
-	.card-link {
-		position: absolute;
-		inset: 0;
-		z-index: 2;
 	}
 
 	@media (max-width: 1024px) {

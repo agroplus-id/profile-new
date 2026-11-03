@@ -70,11 +70,8 @@ export async function seedUpdates(progress?: Progress) {
 export async function seedTestimonials(progress?: Progress) {
 	for (let i = 0; i < defaultTestimonials.length; i++) {
 		progress?.(`Mengimpor testimoni ${i + 1}/${defaultTestimonials.length}…`);
-		const { id, html, ...data } = defaultTestimonials[i];
+		const { id, ...data } = defaultTestimonials[i];
 		await createDocWithId('testimonials', id, data);
-		if (html) {
-			await createDocWithId('testimonialArticles', id, { html });
-		}
 	}
 }
 

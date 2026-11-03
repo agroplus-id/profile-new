@@ -3,15 +3,13 @@
 	import Icon from '$lib/admin/Icon.svelte';
 	import FilterBar from '$lib/admin/FilterBar.svelte';
 	import { inRange, matches, newFilter } from '$lib/admin/filter';
-	import RichEditor from '$lib/admin/RichEditor.svelte';
 	import { notify } from '$lib/admin/toast.svelte';
-	import { createDoc, formatDate, listAll, patchDoc, readDoc, removeDoc, writeDoc } from '$lib/admin/db';
+	import { createDoc, formatDate, listAll, patchDoc, removeDoc } from '$lib/admin/db';
 	import { resizeToDataUrl } from '$lib/team-store';
-	import { TESTIMONIAL_CATEGORIES, defaultTestimonials, type TestimonialItem } from '$lib/data/testimonials';
+	import { TESTIMONIAL_CATEGORIES } from '$lib/data/testimonials';
 	import { seedTestimonials } from '$lib/admin/seed';
 
 	const CATEGORIES = [...TESTIMONIAL_CATEGORIES];
-	const MAX_HTML = 900_000;
 
 	type TestimonialForm = {
 		title: string;
@@ -47,12 +45,10 @@
 	let editingId = $state<string | null>(null);
 	let confirmId = $state<string | null>(null);
 	let form = $state<TestimonialForm>(blank());
-	let html = $state('');
-	let words = $state(0);
-	let hadBody = false;
-	let bodyReady = $state(false);
 	let startSnap = '';
 	let confirmClose = $state(false);
+	let seeding = $state('');
+	let hasPermissionError = $state(false);
 
 	let filt = $state(newFilter('terbaru', ['status', 'category', 'cover']));
 
@@ -112,25 +108,7 @@
 			})
 	);
 
-	const dirty = $derived(editing && bodyReady && JSON.stringify([form, html]) !== startSnap);
-	const sizeKb = $derived(Math.round((html.length + form.image.length) / 1024));
-	const tooBig = $derived(html.length + form.image.length > MAX_HTML);
-	const readMin = $derived(Math.max(1, Math.round(words / 200)));
-
-	let seeding = $state('');
-	let hasPermissionError = $state(false);
-
-	async function importSamples() {
-		try {
-			await seedTestimonials((t) => (seeding = t));
-			notify('3 testimoni bawaan berhasil diimpor');
-			await load();
-		} catch (err) {
-			notify('Gagal impor: ' + err, true);
-		} finally {
-			seeding = '';
-		}
-	}
+	const dirty = $derived(editing && JSON.stringify(form) !== startSnap);
 
 	async function load() {
 		hasPermissionError = false;
@@ -149,34 +127,33 @@
 
 	onMount(load);
 
-	function begin(id: string | null, initialForm: TestimonialForm, initialHtml: string) {
+	async function importSamples() {
+		try {
+			await seedTestimonials((t) => (seeding = t));
+			notify('Testimoni contoh berhasil diimpor');
+			await load();
+		} catch (err) {
+			notify('Gagal impor: ' + err, true);
+		} finally {
+			seeding = '';
+		}
+	}
+
+	function begin(id: string | null, initialForm: TestimonialForm) {
 		editingId = id;
-		form = initialForm;
-		html = initialHtml;
-		hadBody = !!initialHtml;
+		form = { ...initialForm };
 		confirmClose = false;
 		editing = true;
-		bodyReady = true;
-		startSnap = JSON.stringify([form, html]);
+		startSnap = JSON.stringify(form);
 	}
 
 	function openAdd() {
-		bodyReady = false;
-		begin(null, blank(), '');
+		begin(null, blank());
 	}
 
-	async function openEdit(r: Row) {
-		bodyReady = false;
-		editing = true;
-		editingId = r.id;
-		const { id: _id, ...rest } = r;
-		let body = '';
-		try {
-			body = (await readDoc<{ html: string }>('testimonialArticles', r.id))?.html ?? '';
-		} catch (err) {
-			notify('Isi testimoni tidak bisa dimuat: ' + err, true);
-		}
-		begin(r.id, { ...blank(), ...rest }, body);
+	function openEdit(r: Row) {
+		const { id, ...rest } = r;
+		begin(id, { ...blank(), ...rest });
 	}
 
 	function requestClose() {
@@ -188,9 +165,19 @@
 		const input = e.currentTarget as HTMLInputElement;
 		const file = input.files?.[0];
 		if (!file) return;
+		if (!file.type.startsWith('image/')) {
+			notify('Pilih file gambar yang valid (JPG, PNG, atau WebP)', true);
+			input.value = '';
+			return;
+		}
+		if (file.size > 8 * 1024 * 1024) {
+			notify('Ukuran file foto maksimal 8 MB', true);
+			input.value = '';
+			return;
+		}
 		try {
-			let url = await resizeToDataUrl(file, 1400, 0.78);
-			if (url.length > 300_000) url = await resizeToDataUrl(file, 1100, 0.68);
+			let url = await resizeToDataUrl(file, 1200, 0.78);
+			if (url.length > 250_000) url = await resizeToDataUrl(file, 900, 0.68);
 			form.image = url;
 		} catch {
 			notify('File bukan gambar yang valid', true);
@@ -199,30 +186,23 @@
 		}
 	}
 
-	function grow(e: Event) {
-		const el = e.currentTarget as HTMLTextAreaElement;
-		el.style.height = 'auto';
-		el.style.height = el.scrollHeight + 'px';
-	}
-
-	function autosize(node: HTMLTextAreaElement) {
-		queueMicrotask(() => {
-			node.style.height = 'auto';
-			node.style.height = node.scrollHeight + 'px';
-		});
-	}
-
 	async function save(publishNow?: boolean) {
-		if (!form.title.trim()) {
-			notify('Judul cerita wajib diisi', true);
+		const title = form.title.trim();
+		const clientName = form.clientName.trim();
+		if (!title) {
+			notify('Judul testimoni wajib diisi', true);
 			return;
 		}
-		if (!form.clientName.trim()) {
-			notify('Nama klien wajib diisi', true);
+		if (title.length < 3) {
+			notify('Judul testimoni minimal 3 karakter', true);
 			return;
 		}
-		if (tooBig) {
-			notify('Isi artikel terlalu besar. Kurangi jumlah atau ukuran gambar.', true);
+		if (!clientName) {
+			notify('Nama klien/narasumber wajib diisi', true);
+			return;
+		}
+		if (form.summary.length > 280) {
+			notify('Kutipan maksimal 280 karakter', true);
 			return;
 		}
 		if (publishNow !== undefined) form.published = publishNow;
@@ -230,22 +210,23 @@
 		try {
 			const data = {
 				...form,
-				title: form.title.trim(),
-				clientName: form.clientName.trim(),
+				title,
+				clientName,
 				clientRole: form.clientRole.trim(),
-				clientCompany: form.clientCompany.trim()
+				clientCompany: form.clientCompany.trim(),
+				summary: form.summary.trim(),
+				rating: Number(form.rating) || 5,
+				date: form.date || new Date().toISOString().slice(0, 10)
 			};
-			let id = editingId;
-			if (id) await patchDoc('testimonials', id, data);
-			else id = (await createDoc('testimonials', data)).id;
+			if (editingId) {
+				await patchDoc('testimonials', editingId, data);
+			} else {
+				await createDoc('testimonials', data);
+			}
 
-			if (html) await writeDoc('testimonialArticles', id, { html });
-			else if (hadBody) await removeDoc('testimonialArticles', id);
-
-			hadBody = !!html;
-			editingId = id;
-			startSnap = JSON.stringify([form, html]);
+			startSnap = JSON.stringify(form);
 			notify(form.published ? 'Testimoni disimpan dan terbit' : 'Draf testimoni disimpan');
+			editing = false;
 			await load();
 		} catch (err) {
 			notify('Gagal menyimpan: ' + err, true);
@@ -266,7 +247,6 @@
 	async function remove(r: Row) {
 		try {
 			await removeDoc('testimonials', r.id);
-			await removeDoc('testimonialArticles', r.id).catch(() => {});
 			notify('Testimoni dihapus');
 			confirmId = null;
 			await load();
@@ -283,7 +263,7 @@
 <div class="adm-page-head">
 	<div>
 		<h1>Testimoni &amp; Cerita Klien</h1>
-		<p>Kelola testimoni mitra, bukti kolaborasi di kebun/fasilitas prosesor, dan studi kasus dampak teknologi AgroPlus.</p>
+		<p>Kelola testimoni mitra, bukti serah terima perangkat di kebun/fasilitas prosesor, dan review kepuasan klien.</p>
 	</div>
 	<div class="head-acts">
 		<button type="button" class="adm-btn primary" onclick={openAdd}>
@@ -308,7 +288,7 @@
 		filters={filterDefs}
 		sorts={SORTS}
 		dateLabel="Tanggal"
-		placeholder="Cari judul, nama klien, atau ringkasan…"
+		placeholder="Cari judul, nama klien, atau lokasi…"
 		total={rows.length}
 		shown={sorted.length}
 		noun="testimoni"
@@ -325,10 +305,10 @@
 	<div class="adm-card adm-empty">
 		<Icon name="quote" size={32} />
 		<h3>Belum ada testimoni</h3>
-		<p>Tambahkan testimoni dan cerita kolaborasi pertama dari mitra prosesor atau perkebunan kopi Anda.</p>
+		<p>Tambahkan testimoni dan bukti serah terima perangkat pertama dari mitra prosesor atau perkebunan kopi Anda.</p>
 		<div class="empty-acts">
 			<button type="button" class="adm-btn primary" onclick={importSamples} disabled={!!seeding}>
-				{seeding || 'Impor 3 testimoni bawaan'}
+				{seeding || 'Impor data bawaan'}
 			</button>
 			<button type="button" class="adm-btn" onclick={openAdd}>
 				<Icon name="plus" size={16} /> Tambah manual
@@ -339,7 +319,7 @@
 	<div class="adm-card adm-empty">
 		<Icon name="search" size={28} />
 		<h3>Tidak ada hasil</h3>
-		<p>Tidak ada testimoni yang cocok dengan filter yang dipilih.</p>
+		<p>Tidak ada testimoni yang cocok dengan kata kunci atau filter yang dipilih.</p>
 	</div>
 {:else}
 	<div class="list">
@@ -381,7 +361,7 @@
 
 				<div class="acts">
 					{#if r.published !== false}
-						<a class="adm-btn sm icon-only" href="/testimonials/{r.id}" target="_blank" rel="noreferrer" title="Lihat di situs">
+						<a class="adm-btn sm icon-only" href="/testimonials" target="_blank" rel="noreferrer" title="Lihat di situs">
 							<Icon name="external" size={16} />
 						</a>
 					{/if}
@@ -398,7 +378,7 @@
 					</button>
 					{#if confirmId === r.id}
 						<div class="confirm-pop">
-							<span>Hapus cerita ini?</span>
+							<span>Hapus testimoni ini?</span>
 							<button type="button" class="adm-btn sm danger" onclick={() => remove(r)}>Ya, hapus</button>
 							<button type="button" class="adm-btn sm" onclick={() => (confirmId = null)}>Batal</button>
 						</div>
@@ -418,7 +398,7 @@
 	</div>
 {/if}
 
-<!-- Editor Drawer / Modal -->
+<!-- Form Modal / Drawer (Sederhana & Cepat) -->
 {#if editing}
 	<div class="drawer-overlay" onclick={(e) => e.target === e.currentTarget && requestClose()} role="presentation">
 		<div class="drawer" class:is-dirty={dirty}>
@@ -428,25 +408,17 @@
 						<Icon name="close" size={18} />
 					</button>
 					<div>
-						<h2>{editingId ? 'Edit Testimoni' : 'Testimoni Baru'}</h2>
-						<span class="ed-state">{form.published ? 'Akan terbit di situs' : 'Disimpan sebagai draf'}</span>
+						<h2>{editingId ? 'Edit Testimoni' : 'Tambah Testimoni Baru'}</h2>
+						<span class="ed-state">{form.published ? 'Status: Terbit di situs' : 'Status: Disimpan sebagai draf'}</span>
 					</div>
 				</div>
 
 				<div class="ed-acts">
-					{#if dirty}
-						<span class="dirty-badge">Perubahan belum disimpan</span>
-					{/if}
-					{#if editingId && form.published}
-						<a class="adm-btn sm" href="/testimonials/{editingId}" target="_blank" rel="noreferrer">
-							<Icon name="external" size={15} /> Lihat di situs
-						</a>
-					{/if}
 					<button type="button" class="adm-btn" disabled={saving} onclick={() => save(false)}>
 						Simpan draf
 					</button>
-					<button type="button" class="adm-btn primary" disabled={saving || tooBig} onclick={() => save(true)}>
-						{saving ? 'Menyimpan…' : 'Terbitkan'}
+					<button type="button" class="adm-btn primary" disabled={saving} onclick={() => save(true)}>
+						{saving ? 'Menyimpan…' : 'Simpan & Terbitkan'}
 					</button>
 				</div>
 			</div>
@@ -455,135 +427,154 @@
 				<div class="confirm-bar">
 					<span>Ada perubahan yang belum disimpan. Yakin ingin keluar?</span>
 					<div>
-						<button type="button" class="adm-btn sm danger" onclick={() => (editing = false)}>Ya, abaikan</button>
+						<button type="button" class="adm-btn sm danger" onclick={() => (editing = false)}>Abaikan</button>
 						<button type="button" class="adm-btn sm primary" onclick={() => (confirmClose = false)}>Lanjut edit</button>
 					</div>
 				</div>
 			{/if}
 
-			<div class="ed-body">
-				<div class="ed-main">
-					<div class="ed-paper">
-						<!-- Cover / Foto Bukti Klien -->
-						<div class="cover-box">
-							{#if form.image}
-								<img class="cover-preview" src={form.image} alt="Foto bukti klien" />
-								<div class="cover-acts">
+			<div class="ed-content">
+				<div class="form-container">
+					<!-- Upload Foto Bukti -->
+					<div class="form-group">
+						<span class="field-title">Foto Bukti / Penyerahan Perangkat</span>
+						{#if form.image}
+							<div class="cover-preview-box">
+								<img class="cover-preview" src={form.image} alt="Foto bukti" />
+								<div class="cover-actions">
 									<label class="adm-btn sm">
-										Ganti foto
+										Ganti Foto
 										<input type="file" accept="image/*" hidden onchange={pickCover} />
 									</label>
-									<button type="button" class="adm-btn sm" onclick={() => (form.image = '')}>Hapus</button>
+									<button type="button" class="adm-btn sm" onclick={() => (form.image = '')}>Hapus Foto</button>
 								</div>
-							{:else}
-								<label class="cover-empty">
-									<Icon name="media" size={26} />
-									<strong>Tambahkan foto bersama klien / bukti implementasi</strong>
-									<span>Format landscape paling pas untuk cover cerita</span>
-									<input type="file" accept="image/*" hidden onchange={pickCover} />
-								</label>
-							{/if}
-						</div>
+							</div>
+						{:else}
+							<label class="cover-empty">
+								<Icon name="media" size={28} />
+								<strong>Pilih Foto Bukti Klien</strong>
+								<span>Klik untuk memilih file foto (landscape lebih direkomendasikan)</span>
+								<input type="file" accept="image/*" hidden onchange={pickCover} />
+							</label>
+						{/if}
+					</div>
 
-						<textarea
-							class="title-input"
-							rows="1"
-							placeholder="Judul kisah testimoni (cth: Optimalisasi Fermentasi Liberica Bersama Ferroir)…"
+					<!-- Judul Testimoni -->
+					<div class="form-group">
+						<div class="field-header">
+							<label for="f-title" class="field-title">Judul Testimoni / Serah Terima *</label>
+							<span class="char-count" class:limit={form.title.length >= 100}>{form.title.length}/100</span>
+						</div>
+						<input
+							id="f-title"
+							class="adm-input f-large"
+							type="text"
+							maxlength="100"
+							placeholder="Cth: Serah Terima Pembelian 1 IoT FERROIR"
 							bind:value={form.title}
-							oninput={grow}
-							use:autosize
-						></textarea>
+							required
+						/>
+					</div>
 
-						<div class="client-grid-inputs">
-							<label class="adm-field">
-								<span>Nama Klien / Narasumber *</span>
-								<input class="adm-input" type="text" placeholder="cth: H. Wandhe" bind:value={form.clientName} required />
-							</label>
-
-							<label class="adm-field">
-								<span>Jabatan / Peran</span>
-								<input class="adm-input" type="text" placeholder="cth: Founder & Head Processor" bind:value={form.clientRole} />
-							</label>
-
-							<label class="adm-field">
-								<span>Nama Perusahaan / Kebun</span>
-								<input class="adm-input" type="text" placeholder="cth: Wandhe Family Estate (Wonosalam)" bind:value={form.clientCompany} />
-							</label>
+					<!-- Klien info -->
+					<div class="fields-row">
+						<div class="form-group">
+							<div class="field-header">
+								<label for="f-name" class="field-title">Nama Klien / Narasumber *</label>
+								<span class="char-count" class:limit={form.clientName.length >= 60}>{form.clientName.length}/60</span>
+							</div>
+							<input
+								id="f-name"
+								class="adm-input"
+								type="text"
+								maxlength="60"
+								placeholder="Cth: Adam"
+								bind:value={form.clientName}
+								required
+							/>
 						</div>
 
-						<label class="adm-field" style="margin-top: 14px;">
-							<span>Kutipan Utama / Ringkasan Singkat (Lead Quote)</span>
-							<textarea
-								class="subtitle-input"
-								rows="2"
-								placeholder="Kutipan langsung dari klien yang paling berbobot (tampil di kartu dan header)..."
-								bind:value={form.summary}
-								oninput={grow}
-								use:autosize
-							></textarea>
-						</label>
+						<div class="form-group">
+							<div class="field-header">
+								<label for="f-role" class="field-title">Peran / Jabatan</label>
+								<span class="char-count" class:limit={form.clientRole.length >= 60}>{form.clientRole.length}/60</span>
+							</div>
+							<input
+								id="f-role"
+								class="adm-input"
+								type="text"
+								maxlength="60"
+								placeholder="Cth: Coffee Farmer"
+								bind:value={form.clientRole}
+							/>
+						</div>
 
-						<div class="editor-section">
-							<span class="editor-label">Isi Lengkap Studi Kasus / Kisah Kolaborasi:</span>
-							{#key editingId ?? 'new'}
-								<RichEditor bind:html bind:words placeholder="Tuliskan latar belakang masalah klien, solusi yang digunakan, kutipan narasumber, dan hasil terukur..." />
-							{/key}
+						<div class="form-group">
+							<div class="field-header">
+								<label for="f-co" class="field-title">Perusahaan / Lokasi</label>
+								<span class="char-count" class:limit={form.clientCompany.length >= 80}>{form.clientCompany.length}/80</span>
+							</div>
+							<input
+								id="f-co"
+								class="adm-input"
+								type="text"
+								maxlength="80"
+								placeholder="Cth: Maduarjo"
+								bind:value={form.clientCompany}
+							/>
 						</div>
 					</div>
-				</div>
 
-				<aside class="ed-side">
-					<section>
-						<h4>Pengaturan</h4>
-						<label class="adm-field">
-							Kategori
-							<select class="adm-input" bind:value={form.category}>
+					<!-- Kutipan Singkat -->
+					<div class="form-group">
+						<div class="field-header">
+							<label for="f-quote" class="field-title">Kutipan / Ulasan Klien (Quote)</label>
+							<span class="char-count" class:limit={form.summary.length >= 260}>{form.summary.length}/260</span>
+						</div>
+						<textarea
+							id="f-quote"
+							class="adm-input f-area"
+							rows="3"
+							maxlength="260"
+							placeholder="Cth: Coba coba dulu sek, kemarin masih lancar pake nya..."
+							bind:value={form.summary}
+						></textarea>
+						<span class="field-hint">Kutipan ini akan langsung tampil di dalam kartu testimoni (maksimal 260 karakter).</span>
+					</div>
+
+					<!-- Kategori, Tanggal, Rating -->
+					<div class="fields-row">
+						<div class="form-group">
+							<label for="f-cat" class="field-title">Kategori</label>
+							<select id="f-cat" class="adm-input" bind:value={form.category}>
 								{#each CATEGORIES as c}<option>{c}</option>{/each}
 							</select>
-						</label>
+						</div>
 
-						<label class="adm-field">
-							Rating Kepuasan
-							<select class="adm-input" bind:value={form.rating}>
+						<div class="form-group">
+							<label for="f-date" class="field-title">Tanggal</label>
+							<input id="f-date" class="adm-input" type="date" bind:value={form.date} required />
+						</div>
+
+						<div class="form-group">
+							<label for="f-rating" class="field-title">Rating Kepuasan</label>
+							<select id="f-rating" class="adm-input" bind:value={form.rating}>
 								<option value={5}>★★★★★ (5 Bintang)</option>
 								<option value={4}>★★★★☆ (4 Bintang)</option>
 								<option value={3}>★★★☆☆ (3 Bintang)</option>
 							</select>
-						</label>
+						</div>
+					</div>
 
-						<label class="adm-field">
-							Tanggal
-							<input class="adm-input" type="date" bind:value={form.date} required />
-						</label>
-
+					<!-- Status Publish -->
+					<div class="form-group" style="margin-top: 10px;">
 						<label class="switch">
 							<input type="checkbox" bind:checked={form.published} />
 							<span class="knob"></span>
-							<span>Tayang di situs</span>
+							<span>Tayang langsung di situs publik</span>
 						</label>
-					</section>
-
-					<section>
-						<h4>Statistik Konten</h4>
-						<dl>
-							<div><dt>Kata</dt><dd>{words}</dd></div>
-							<div><dt>Waktu baca</dt><dd>±{readMin} menit</dd></div>
-							<div><dt>Ukuran</dt><dd class:bad={tooBig}>{sizeKb} KB</dd></div>
-						</dl>
-						{#if tooBig}
-							<p class="bad">Ukuran terlalu besar (batas ~900 KB). Kurangi gambar di dalam artikel.</p>
-						{/if}
-					</section>
-
-					<section class="tips">
-						<h4>Tips Cerita Klien Berbobot</h4>
-						<ul>
-							<li>Sertakan nama spesifik perkebunan, roastery, atau fasilitas pengolahan.</li>
-							<li>Gunakan fitur <strong>Blockquote</strong> (<kbd>"</kbd>) untuk highlight kutipan langsung.</li>
-							<li>Sebutkan metrik hasil (misal: stabilitas rasa, penghematan waktu, peningkatan cup score).</li>
-						</ul>
-					</section>
-				</aside>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -626,7 +617,6 @@
 		align-items: center;
 		gap: 20px;
 		padding: 16px 20px;
-		transition: transform 0.2s ease, box-shadow 0.2s ease;
 	}
 
 	.row.is-draft {
@@ -763,7 +753,7 @@
 		color: #25330f;
 	}
 
-	/* Drawer */
+	/* Drawer Modal */
 	.drawer-overlay {
 		position: fixed;
 		inset: 0;
@@ -776,7 +766,7 @@
 
 	.drawer {
 		width: 100%;
-		max-width: 1200px;
+		max-width: 720px;
 		height: 100%;
 		background: #f7f9f6;
 		display: flex;
@@ -827,15 +817,6 @@
 		gap: 10px;
 	}
 
-	.dirty-badge {
-		font-size: 0.75rem;
-		color: #b45309;
-		background: #fef3c7;
-		padding: 4px 10px;
-		border-radius: 999px;
-		font-weight: 600;
-	}
-
 	.confirm-bar {
 		background: #fee2e2;
 		color: #991b1b;
@@ -852,42 +833,90 @@
 		gap: 8px;
 	}
 
-	.ed-body {
+	.ed-content {
 		flex: 1;
-		display: grid;
-		grid-template-columns: 1fr 310px;
-		overflow: hidden;
-	}
-
-	.ed-main {
 		overflow-y: auto;
-		padding: 24px 32px 64px;
+		padding: 24px 28px 48px;
 	}
 
-	.ed-paper {
+	.form-container {
 		background: #ffffff;
 		border-radius: 14px;
-		padding: 32px 36px;
-		box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+		padding: 28px;
 		border: 1px solid rgba(85, 104, 61, 0.12);
+		box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+		display: flex;
+		flex-direction: column;
+		gap: 20px;
 	}
 
-	.cover-box {
-		margin-bottom: 24px;
+	.form-group {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.field-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+	}
+
+	.field-title {
+		font-size: 0.85rem;
+		font-weight: 700;
+		color: #25330f;
+	}
+
+	.char-count {
+		font-size: 0.75rem;
+		color: #849962;
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+	}
+
+	.char-count.limit {
+		color: #dc2626;
+	}
+
+	.field-hint {
+		font-size: 0.78rem;
+		color: #6a7b54;
+	}
+
+	.f-large {
+		font-size: 1.05rem;
+		font-weight: 600;
+	}
+
+	.f-area {
+		line-height: 1.5;
+		resize: vertical;
+	}
+
+	.fields-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 14px;
+	}
+
+	.cover-preview-box {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
 	}
 
 	.cover-preview {
 		width: 100%;
-		max-height: 320px;
+		max-height: 260px;
 		object-fit: cover;
 		border-radius: 10px;
-		display: block;
+		border: 1px solid rgba(85, 104, 61, 0.15);
 	}
 
-	.cover-acts {
+	.cover-actions {
 		display: flex;
 		gap: 8px;
-		margin-top: 10px;
 	}
 
 	.cover-empty {
@@ -895,7 +924,7 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		padding: 36px 20px;
+		padding: 32px 20px;
 		border: 2px dashed rgba(85, 104, 61, 0.3);
 		border-radius: 12px;
 		cursor: pointer;
@@ -921,128 +950,6 @@
 		color: #6a7b54;
 	}
 
-	.title-input {
-		width: 100%;
-		border: none;
-		outline: none;
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: #25330f;
-		line-height: 1.25;
-		margin-bottom: 16px;
-		resize: none;
-		padding: 0;
-		background: transparent;
-	}
-
-	.title-input::placeholder {
-		color: #a4b395;
-	}
-
-	.client-grid-inputs {
-		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 14px;
-		margin-bottom: 16px;
-		padding-bottom: 16px;
-		border-bottom: 1px solid rgba(85, 104, 61, 0.12);
-	}
-
-	.client-grid-inputs span {
-		font-size: 0.78rem;
-		font-weight: 600;
-		color: #45552d;
-		margin-bottom: 4px;
-		display: block;
-	}
-
-	.subtitle-input {
-		width: 100%;
-		border: 1px solid rgba(85, 104, 61, 0.2);
-		border-radius: 8px;
-		padding: 10px 14px;
-		font-size: 0.92rem;
-		color: #25330f;
-		line-height: 1.5;
-		resize: none;
-		background: #fafbfa;
-		outline: none;
-	}
-
-	.subtitle-input:focus {
-		border-color: #25330f;
-		background: #ffffff;
-	}
-
-	.editor-section {
-		margin-top: 24px;
-		padding-top: 20px;
-		border-top: 1px solid rgba(85, 104, 61, 0.12);
-	}
-
-	.editor-label {
-		display: block;
-		font-size: 0.85rem;
-		font-weight: 700;
-		color: #25330f;
-		margin-bottom: 12px;
-	}
-
-	.ed-side {
-		background: #ffffff;
-		border-left: 1px solid rgba(85, 104, 61, 0.15);
-		padding: 24px;
-		overflow-y: auto;
-		display: flex;
-		flex-direction: column;
-		gap: 24px;
-	}
-
-	.ed-side section h4 {
-		margin: 0 0 12px;
-		font-size: 0.85rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		color: #849962;
-	}
-
-	.ed-side dl {
-		display: grid;
-		gap: 8px;
-		margin: 0;
-	}
-
-	.ed-side dl div {
-		display: flex;
-		justify-content: space-between;
-		font-size: 0.85rem;
-	}
-
-	.ed-side dt {
-		color: #6a7b54;
-	}
-
-	.ed-side dd {
-		margin: 0;
-		font-weight: 700;
-		color: #25330f;
-	}
-
-	.bad {
-		color: #b91c1c !important;
-	}
-
-	.tips ul {
-		margin: 0;
-		padding-left: 18px;
-		font-size: 0.8rem;
-		color: #45552d;
-		line-height: 1.5;
-		display: grid;
-		gap: 6px;
-	}
-
 	.switch {
 		display: flex;
 		align-items: center;
@@ -1050,7 +957,6 @@
 		font-size: 0.88rem;
 		font-weight: 600;
 		cursor: pointer;
-		margin-top: 14px;
 	}
 
 	.switch input {
@@ -1089,7 +995,7 @@
 		transform: translateX(20px);
 	}
 
-	@media (max-width: 960px) {
+	@media (max-width: 640px) {
 		.row {
 			grid-template-columns: 1fr auto;
 		}
@@ -1098,17 +1004,8 @@
 			display: none;
 		}
 
-		.ed-body {
-			grid-template-columns: 1fr;
-		}
-
-		.ed-side {
-			display: none;
-		}
-
-		.client-grid-inputs {
+		.fields-row {
 			grid-template-columns: 1fr;
 		}
 	}
 </style>
-
