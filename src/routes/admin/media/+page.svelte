@@ -7,6 +7,13 @@
 	import { createDoc, listAll, patchDoc, removeDoc } from '$lib/admin/db';
 	import { resizeLogo } from '$lib/admin/image';
 	import { seedPartners, seedPress, type Progress } from '$lib/admin/seed';
+	import { doc, getDoc, setDoc } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
+	import { proofDefault, type ProofData } from '$lib/data/home';
+	import { resizeToDataUrl } from '$lib/team-store';
+
+	let proof = $state<ProofData>({ ...proofDefault });
+	let savingProof = $state(false);
 
 	let seeding = $state('');
 
@@ -89,14 +96,63 @@
 	async function load() {
 		loading = true;
 		try {
-			[press, partners] = await Promise.all([
+			const [pressRes, partnersRes, proofSnap] = await Promise.all([
 				listAll<Press>('press').then(sortByOrder),
-				listAll<Partner>('partners').then(sortByOrder)
+				listAll<Partner>('partners').then(sortByOrder),
+				getDoc(doc(db, 'settings', 'proof'))
 			]);
+			press = pressRes;
+			partners = partnersRes;
+			if (proofSnap.exists()) {
+				proof = { ...proofDefault, ...(proofSnap.data() as Partial<ProofData>) };
+			}
 		} catch (err) {
 			notify('Gagal memuat media: ' + err, true);
 		} finally {
 			loading = false;
+		}
+	}
+
+	async function pickProofImage(e: Event) {
+		const file = (e.currentTarget as HTMLInputElement).files?.[0];
+		if (!file) return;
+		if (file.size > 8 * 1024 * 1024) {
+			notify('Ukuran file maksimal 8 MB', true);
+			return;
+		}
+		try {
+			const dataUrl = await resizeToDataUrl(file, 1600, 0.82);
+			proof.image = dataUrl;
+			notify('Foto berhasil dipilih. Jangan lupa klik "Simpan Dokumentasi Proving"');
+		} catch {
+			notify('File bukan gambar yang valid', true);
+		}
+	}
+
+	async function saveProof(e?: SubmitEvent) {
+		e?.preventDefault();
+		if (!proof.title.trim()) {
+			notify('Judul Proving wajib diisi', true);
+			return;
+		}
+		savingProof = true;
+		try {
+			await setDoc(
+				doc(db, 'settings', 'proof'),
+				{
+					title: proof.title.trim(),
+					description: proof.description.trim(),
+					linkLabel: proof.linkLabel.trim(),
+					linkUrl: proof.linkUrl.trim(),
+					image: proof.image || ''
+				},
+				{ merge: true }
+			);
+			notify('Dokumentasi Proving berhasil disimpan');
+		} catch (err) {
+			notify('Gagal menyimpan dokumentasi proving: ' + err, true);
+		} finally {
+			savingProof = false;
 		}
 	}
 
@@ -175,12 +231,91 @@
 
 <div class="adm-page-head">
 	<div>
-		<h1>Media</h1>
-		<p>Bagian "In the press" dan logo mitra yang berjalan di halaman utama.</p>
+		<h1>Media & Proving</h1>
+		<p>Kelola dokumentasi kunjungan lapangan (Proving), bagian "In the press", dan logo mitra yang berjalan di halaman utama.</p>
 	</div>
 </div>
 
+<!-- ───── Dokumentasi Proving (Kunjungan Lapangan) ───── -->
 <section class="adm-card sec adm-rise" style="--i:0">
+	<div class="adm-card-head">
+		<div>
+			<h2>Dokumentasi Proving (Kunjungan Lapangan)</h2>
+			<p class="hint">Bagian di halaman utama setelah perkenalan. Menampilkan foto dokumentasi lapangan, judul, dan ringkasan.</p>
+		</div>
+	</div>
+
+	<form onsubmit={saveProof} class="proof-container">
+		<div class="proof-grid">
+			<div class="proof-photo-box">
+				<div class="proof-photo-label">Foto Dokumentasi</div>
+				<div class="proof-preview">
+					{#if proof.image}
+						<img src={proof.image} alt="Preview Proving" />
+					{:else}
+						<div class="proof-empty-ph">
+							<Icon name="media" size={38} />
+							<span>Belum ada foto</span>
+							<small>Gunakan foto landscape (16:9)</small>
+						</div>
+					{/if}
+				</div>
+				<div class="proof-photo-actions">
+					<label class="adm-btn sm">
+						<Icon name="media" size={16} />
+						{proof.image ? 'Ganti Foto' : 'Unggah Foto'}
+						<input type="file" accept="image/*" onchange={pickProofImage} hidden />
+					</label>
+					{#if proof.image}
+						<button type="button" class="adm-btn sm danger" onclick={() => (proof.image = '')}>
+							<Icon name="trash" size={16} /> Hapus Foto
+						</button>
+					{/if}
+				</div>
+				<p class="hint">Maksimal 8 MB. Foto akan dikompresi otomatis agar cepat dimuat pengunjung.</p>
+			</div>
+
+			<div class="proof-form-fields">
+				<div class="adm-form-grid">
+					<label class="adm-field wide">
+						Judul Bagian Proving *
+						<input class="adm-input" bind:value={proof.title} placeholder="Agroplus Proving: Coffee land origin visit..." required />
+					</label>
+
+					<label class="adm-field wide">
+						Deskripsi / Ringkasan Kunjungan
+						<textarea
+							class="adm-input"
+							rows="4"
+							bind:value={proof.description}
+							placeholder="Ceritakan proses kunjungan, pengujian alat, atau capaian teknologi..."
+						></textarea>
+					</label>
+
+					<label class="adm-field">
+						Teks Tautan (Opsional)
+						<input class="adm-input" bind:value={proof.linkLabel} placeholder="Contoh: Learn more (kosongkan jika tanpa link)" />
+					</label>
+
+					<label class="adm-field">
+						Tujuan URL Tautan
+						<input class="adm-input" bind:value={proof.linkUrl} placeholder="#tools atau /testimonials atau https://..." />
+					</label>
+				</div>
+
+				<div class="proof-footer">
+					<button type="submit" class="adm-btn primary" disabled={savingProof}>
+						<Icon name="check" size={16} />
+						{savingProof ? 'Menyimpan…' : 'Simpan Dokumentasi Proving'}
+					</button>
+				</div>
+			</div>
+		</div>
+	</form>
+</section>
+
+<!-- ───── In the press ───── -->
+<section class="adm-card sec adm-rise" style="--i:1">
 	<div class="adm-card-head">
 		<div>
 			<h2>In the press</h2>
@@ -227,7 +362,7 @@
 	{/if}
 </section>
 
-<section class="adm-card sec adm-rise" style="--i:1">
+<section class="adm-card sec adm-rise" style="--i:2">
 	<div class="adm-card-head">
 		<div>
 			<h2>Logo mitra</h2>
@@ -461,6 +596,92 @@
 
 		.rows .acts {
 			grid-column: 1 / -1;
+		}
+	}
+
+	.proof-container {
+		margin-top: 14px;
+	}
+
+	.proof-grid {
+		display: grid;
+		grid-template-columns: 360px 1fr;
+		gap: 24px;
+		align-items: start;
+	}
+
+	.proof-photo-box {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.proof-photo-label {
+		font-size: 0.8rem;
+		font-weight: 500;
+		color: var(--muted);
+	}
+
+	.proof-preview {
+		width: 100%;
+		aspect-ratio: 16 / 9;
+		background: #d8e4c6;
+		border: 1px dashed var(--line);
+		border-radius: 14px;
+		overflow: hidden;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.proof-preview img {
+		width: 100%;
+		height: 100%;
+		object-fit: cover;
+		display: block;
+	}
+
+	.proof-empty-ph {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 6px;
+		color: #45552d;
+		padding: 20px;
+		text-align: center;
+	}
+
+	.proof-empty-ph span {
+		font-weight: 600;
+		font-size: 0.88rem;
+	}
+
+	.proof-empty-ph small {
+		font-size: 0.74rem;
+		opacity: 0.8;
+	}
+
+	.proof-photo-actions {
+		display: flex;
+		gap: 8px;
+		flex-wrap: wrap;
+	}
+
+	.proof-form-fields {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.proof-footer {
+		display: flex;
+		justify-content: flex-end;
+		margin-top: 6px;
+	}
+
+	@media (max-width: 900px) {
+		.proof-grid {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>

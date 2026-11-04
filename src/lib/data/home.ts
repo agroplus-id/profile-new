@@ -64,3 +64,20 @@ export const pressItems = Array.from({ length: 3 }, () => ({
 export const partnerLogos = [
 	embassyLogo, partnersLogo, partnerOneLogo, instellarLogo, partnerTwoLogo, techHubLogo, embassyLogo
 ];
+
+export interface ProofData {
+	title: string;
+	description: string;
+	linkLabel: string;
+	linkUrl: string;
+	image: string;
+}
+
+export const proofDefault: ProofData = {
+	title: 'Agroplus Proving: Coffee land origin visit for Agroplus technologies product',
+	description:
+		'In Desember 2025, Agroplus Demo achieved a review success after market validation from the Wandhe Estate Family Ecosystem. The result is Ferroir, the fermentation tools for newborn coffee processor, and the ferment-tank will launch at August 2026.',
+	linkLabel: 'Learn more',
+	linkUrl: '#tools',
+	image: ''
+};

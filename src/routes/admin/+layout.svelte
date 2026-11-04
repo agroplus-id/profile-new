@@ -15,7 +15,7 @@
 		{ href: '/admin/team', label: 'Tim', icon: 'team' },
 		{ href: '/admin/updates', label: 'Berita', icon: 'news' },
 		{ href: '/admin/testimonials', label: 'Testimoni', icon: 'quote' },
-		{ href: '/admin/media', label: 'Media', icon: 'media' },
+		{ href: '/admin/media', label: 'Media & Proving', icon: 'media' },
 		{ href: '/admin/batches', label: 'Batch', icon: 'batch' },
 		{ href: '/admin/orders', label: 'Pesanan', icon: 'orders' },
 		{ href: '/admin/customers', label: 'Pelanggan', icon: 'team' },
