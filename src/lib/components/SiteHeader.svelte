@@ -26,6 +26,7 @@
 			mega: true,
 			items: [
 				{ label: 'Team', href: '/team', desc: 'The people behind AgroPlus.ID' },
+				{ label: 'Testimonials', href: '/testimonials', desc: 'Stories from our partners and community' },
 				{ label: 'Roadmap', href: '/#about', desc: 'Where we are heading' }
 			]
 		},
@@ -177,16 +178,7 @@
 						</a>
 					</li>
 					{@render menuItem(menus[0], 1, 'left')}
-					<li class="vnav-li" style="--i:2">
-						<a
-							class="vnav-btn"
-							href="/testimonials"
-							data-active={page.url.pathname.startsWith('/testimonials')}
-						>
-							<span class="wipe"></span><span class="txt">Testimonials</span>
-						</a>
-					</li>
-					{@render menuItem(menus[1], 3, 'left')}
+					{@render menuItem(menus[1], 2, 'left')}
 				</ul>
 			</nav>
 
@@ -270,10 +262,8 @@
 					</div>
 				</div>
 			</div>
-			<!-- Testimonials -->
-			<a class="m-link" href="/testimonials" style="--i:2">Testimonials</a>
 			<!-- About us -->
-			<div class="m-group" style="--i:3">
+			<div class="m-group" style="--i:2">
 				<button class="m-link m-toggle" onclick={() => toggle('about')} aria-expanded={open === 'about'}>
 					About us<span class="m-plus" class:is-open={open === 'about'}></span>
 				</button>

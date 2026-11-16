@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { collection, getCountFromServer, getDocs, query, where } from 'firebase/firestore';
+	import { db } from '$lib/firebase';
+	import { formatPhone } from '$lib/account/account';
 	import Icon from '$lib/admin/Icon.svelte';
 	import FilterBar from '$lib/admin/FilterBar.svelte';
 	import { countBy, inRange, matches, newFilter } from '$lib/admin/filter';
@@ -117,6 +120,123 @@
 	function portal(node: HTMLElement) {
 		document.body.appendChild(node);
 		return { destroy: () => node.remove() };
+	}
+
+	// ───── Siapa saja yang membuka kode kemasan batch ini (koleksi "scans") ─────
+	type Scan = { id: string; uid: string; email: string; name: string; phone: string; code: string; itemNumber: number; createdAt: string };
+	const VIEW_PER_PAGE = 10;
+	let viewCounts = $state<Record<string, number>>({});
+	let viewBatch = $state<string | null>(null);
+	let views = $state<Scan[]>([]);
+	let viewLoading = $state(false);
+	let viewFailed = $state(false);
+	let viewPage = $state(0);
+	let vf = $state(newFilter('terbaru', ['kode', 'multi']));
+	const counted = new Set<string>();
+
+	// Hanya jumlahnya yang dihitung di server; daftar lengkap baru dimuat saat jendela dibuka.
+	$effect(() => {
+		for (const r of rows) {
+			if (counted.has(r.id)) continue;
+			counted.add(r.id);
+			getCountFromServer(query(collection(db, 'scans'), where('batchId', '==', r.id)))
+				.then((s) => (viewCounts[r.id] = s.data().count))
+				.catch(() => {});
+		}
+	});
+
+	async function openViews(id: string) {
+		viewBatch = id;
+		views = [];
+		vf = newFilter('terbaru', ['kode', 'multi']);
+		viewFailed = false;
+		viewLoading = true;
+		try {
+			const snap = await getDocs(query(collection(db, 'scans'), where('batchId', '==', id)));
+			views = snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Scan, 'id'>) }));
+			viewCounts[id] = views.length;
+		} catch {
+			viewFailed = true;
+		} finally {
+			viewLoading = false;
+		}
+	}
+
+	// Kode yang dibuka lebih dari satu akun: kemungkinan dibagikan atau kemasan dipalsukan.
+	const sharedCodes = $derived.by(() => {
+		const by = new Map<string, Set<string>>();
+		for (const v of views) by.set(v.code, (by.get(v.code) ?? new Set()).add(v.uid));
+		return new Set([...by].filter(([, s]) => s.size > 1).map(([c]) => c));
+	});
+
+	const VIEW_SORTS = [
+		{ value: 'terbaru', label: 'Terbaru' },
+		{ value: 'terlama', label: 'Terlama' },
+		{ value: 'nama', label: 'Nama A–Z' },
+		{ value: 'kode', label: 'Kode kemasan' }
+	];
+	const viewFilterDefs = $derived.by(() => {
+		const per = countBy(views, (v) => v.code);
+		return [
+			{
+				key: 'multi',
+				label: 'Status',
+				options: [
+					{ value: '', label: 'Semua', count: views.length },
+					{ value: 'banyak', label: 'Banyak akun', count: views.filter((v) => sharedCodes.has(v.code)).length }
+				]
+			},
+			{
+				key: 'kode',
+				label: 'Kode kemasan',
+				variant: 'select' as const,
+				options: [{ value: '', label: 'Semua kode', count: views.length }, ...[...per].sort().map(([value, count]) => ({ value, label: value, count }))]
+			}
+		];
+	});
+	const viewVisible = $derived(
+		views
+			.filter(
+				(v) =>
+					(!vf.values.kode || v.code === vf.values.kode) &&
+					(vf.values.multi !== 'banyak' || sharedCodes.has(v.code)) &&
+					inRange(v.createdAt, vf.from, vf.to) &&
+					matches(vf.query, v.name, v.email, v.phone, v.code)
+			)
+			.sort((a, b) => {
+				if (vf.sort === 'terlama') return a.createdAt.localeCompare(b.createdAt);
+				if (vf.sort === 'nama') return (a.name || a.email).localeCompare(b.name || b.email);
+				if (vf.sort === 'kode') return a.code.localeCompare(b.code) || b.createdAt.localeCompare(a.createdAt);
+				return b.createdAt.localeCompare(a.createdAt);
+			})
+	);
+	const viewPages = $derived(Math.max(1, Math.ceil(viewVisible.length / VIEW_PER_PAGE)));
+	const viewRows = $derived(viewVisible.slice(viewPage * VIEW_PER_PAGE, (viewPage + 1) * VIEW_PER_PAGE));
+	const viewPeople = $derived(new Set(views.map((v) => v.uid)).size);
+	const viewCodes = $derived(new Set(views.map((v) => v.code)).size);
+	// Nomor halaman yang ditampilkan: halaman aktif dan tetangganya, plus awal dan akhir.
+	const pageNumbers = $derived(
+		Array.from({ length: viewPages }, (_, i) => i).filter((i) => i === 0 || i === viewPages - 1 || Math.abs(i - viewPage) <= 1)
+	);
+
+	// Kembali ke halaman pertama setiap filter berubah.
+	$effect(() => {
+		[vf.query, vf.values.kode, vf.values.multi, vf.from, vf.to, vf.sort];
+		viewPage = 0;
+	});
+
+	const viewWhen = (iso: string) =>
+		new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+	function exportViews() {
+		const q = (v: string | number) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+		const lines = [
+			['Waktu', 'Nama', 'Email', 'Telepon', 'Kode kemasan', 'Nomor kemasan'].map(q).join(','),
+			...viewVisible.map((v) => [v.createdAt, v.name, v.email, formatPhone(v.phone), v.code, v.itemNumber].map(q).join(','))
+		];
+		const url = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' }));
+		Object.assign(document.createElement('a'), { href: url, download: `verifikasi-${viewBatch}.csv` }).click();
+		URL.revokeObjectURL(url);
 	}
 
 	// Kunci scroll halaman di belakang editor layar penuh.
@@ -659,6 +779,9 @@
 				</dl>
 				<div class="acts">
 					<a class="adm-btn sm" href="/batch/{r.id}" target="_blank" rel="noreferrer"><Icon name="external" size={15} />Lihat</a>
+					<button class="adm-btn sm" onclick={() => openViews(r.id)} aria-label="Lihat siapa yang membuka kode batch ini" title="Siapa yang membuka kode kemasan">
+						<Icon name="eye" size={15} />{viewCounts[r.id] ?? '·'}
+					</button>
 					{#if featuredId !== r.id}
 						<button class="adm-btn sm" onclick={() => setFeatured(r.id)}>Jadikan halaman Bumi Kopi</button>
 					{/if}
@@ -671,6 +794,93 @@
 				</div>
 			</article>
 		{/each}
+	</div>
+{/if}
+
+{#if viewBatch}
+	<div class="adm portal" use:portal>
+		<div class="vm-wrap">
+			<button type="button" class="vm-scrim" aria-label="Tutup" onclick={() => (viewBatch = null)}></button>
+			<div class="vm" role="dialog" aria-modal="true" aria-label="Siapa yang membuka kode kemasan">
+				<header class="vm-head">
+					<div>
+						<small>Siapa yang membuka kode kemasan</small>
+						<h2><span class="code-pill">{viewBatch}</span></h2>
+					</div>
+					<div class="vm-acts">
+						<button class="adm-btn sm" onclick={exportViews} disabled={!viewVisible.length}>Ekspor CSV</button>
+						<button type="button" class="adm-btn sm icon" onclick={() => (viewBatch = null)} aria-label="Tutup"><Icon name="close" size={17} /></button>
+					</div>
+				</header>
+
+				{#if viewLoading}
+					<div class="vm-empty">Memuat…</div>
+				{:else if viewFailed}
+					<div class="vm-empty">
+						<p>Tidak bisa membaca data. Pastikan Firestore Rules terbaru (koleksi <code>scans</code>) sudah di-publish.</p>
+						<button class="adm-btn sm" onclick={() => openViews(viewBatch!)}>Coba lagi</button>
+					</div>
+				{:else if !views.length}
+					<div class="vm-empty">
+						<Icon name="eye" size={30} />
+						<p>Belum ada yang membuka kode kemasan batch ini.</p>
+					</div>
+				{:else}
+					<div class="vm-stats">
+						<div><b>{views.length}</b><span>Pembukaan</span></div>
+						<div><b>{viewPeople}</b><span>Orang berbeda</span></div>
+						<div><b>{viewCodes}</b><span>Kode terbuka</span></div>
+						<div class:alert={sharedCodes.size > 0}><b>{sharedCodes.size}</b><span>Kode dibuka banyak akun</span></div>
+					</div>
+
+					<div class="vm-filter">
+						<FilterBar bind:model={vf} filters={viewFilterDefs} sorts={VIEW_SORTS} dateLabel="Tanggal dibuka" placeholder="Cari nama, email, telepon, kode…" total={views.length} shown={viewVisible.length} noun="pembukaan" flat />
+					</div>
+
+					<div class="vm-table">
+						{#if !viewVisible.length}
+							<div class="vm-empty">Tidak ada catatan yang cocok dengan filter.</div>
+						{:else}
+							<table class="adm-table">
+								<thead>
+									<tr><th>Waktu</th><th>Pengguna</th><th>Telepon</th><th>Kode kemasan</th></tr>
+								</thead>
+								<tbody>
+									{#each viewRows as v (v.id)}
+										<tr>
+											<td class="nowrap">{viewWhen(v.createdAt)}</td>
+											<td><strong>{v.name || '—'}</strong><small>{v.email}</small></td>
+											<td class="nowrap">{formatPhone(v.phone) || '—'}</td>
+											<td class="nowrap">
+												<span class="mono">{v.code}</span>
+												{#if sharedCodes.has(v.code)}<span class="adm-badge amber" title="Dibuka oleh lebih dari satu akun">Banyak akun</span>{/if}
+												<small>Kemasan #{v.itemNumber}</small>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						{/if}
+					</div>
+
+					{#if viewVisible.length > VIEW_PER_PAGE}
+						<footer class="vm-pager">
+							<span>{viewPage * VIEW_PER_PAGE + 1}–{Math.min((viewPage + 1) * VIEW_PER_PAGE, viewVisible.length)} dari {viewVisible.length}</span>
+							<div class="pg">
+								<button class="adm-btn sm" onclick={() => viewPage--} disabled={viewPage === 0} aria-label="Halaman sebelumnya">‹ Sebelumnya</button>
+								{#each pageNumbers as n, i (n)}
+									{#if i > 0 && n - pageNumbers[i - 1] > 1}<span class="gap">…</span>{/if}
+									<button class="num" class:on={n === viewPage} onclick={() => (viewPage = n)} aria-current={n === viewPage ? 'page' : undefined}>{n + 1}</button>
+								{/each}
+								<button class="adm-btn sm" onclick={() => viewPage++} disabled={viewPage >= viewPages - 1} aria-label="Halaman berikutnya">Berikutnya ›</button>
+							</div>
+						</footer>
+					{:else}
+						<div class="vm-gap"></div>
+					{/if}
+				{/if}
+			</div>
+		</div>
 	</div>
 {/if}
 
@@ -1456,6 +1666,202 @@
 
 	.acts .adm-btn:last-child {
 		margin-left: auto;
+	}
+
+	/* ───── Jendela tengah: siapa yang membuka kode kemasan ───── */
+	.vm-wrap {
+		position: absolute;
+		inset: 0;
+		display: grid;
+		place-items: center;
+		padding: clamp(10px, 3vw, 32px);
+	}
+
+	.vm-scrim {
+		position: absolute;
+		inset: 0;
+		border: 0;
+		background: rgba(20, 28, 10, 0.45);
+		cursor: default;
+		animation: vm-fade 0.3s ease both;
+	}
+
+	.vm {
+		position: relative;
+		display: flex;
+		flex-direction: column;
+		width: min(1000px, 100%);
+		max-height: 100%;
+		overflow: hidden;
+		border-radius: 20px;
+		background: var(--bg);
+		box-shadow: 0 30px 80px rgba(20, 28, 10, 0.3);
+		animation: vm-in 0.4s var(--ease) both;
+	}
+
+	@keyframes vm-in {
+		from {
+			opacity: 0;
+			transform: translateY(18px) scale(0.98);
+		}
+	}
+
+	@keyframes vm-fade {
+		from {
+			opacity: 0;
+		}
+	}
+
+	.vm-head {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+		padding: 22px 26px 16px;
+	}
+
+	.vm-head small {
+		color: var(--muted);
+	}
+
+	.vm-head h2 {
+		margin: 4px 0 0;
+		font-size: 1.05rem;
+		word-break: break-all;
+	}
+
+	.vm-acts {
+		display: flex;
+		gap: 8px;
+	}
+
+	.vm-stats {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 12px;
+		padding: 0 26px 16px;
+	}
+
+	.vm-stats div {
+		display: grid;
+		gap: 2px;
+		padding: 12px 16px;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: #fff;
+	}
+
+	.vm-stats b {
+		font-size: 1.4rem;
+		line-height: 1.1;
+	}
+
+	.vm-stats span {
+		color: var(--muted);
+		font-size: 0.78rem;
+	}
+
+	.vm-stats .alert {
+		border-color: #e7c3bd;
+		background: #fbefed;
+	}
+
+	.vm-stats .alert b {
+		color: #8e2a20;
+	}
+
+	.vm-filter {
+		padding: 0 26px;
+	}
+
+	.vm-table {
+		flex: 1;
+		min-height: 120px;
+		margin: 0 26px;
+		overflow: auto;
+		border: 1px solid var(--line);
+		border-radius: 14px;
+		background: #fff;
+	}
+
+	.vm-table small {
+		display: block;
+		color: var(--muted);
+		font-size: 0.76rem;
+		line-height: 1.4;
+	}
+
+	.vm-table .nowrap {
+		white-space: nowrap;
+	}
+
+	.vm-gap {
+		height: 22px;
+	}
+
+	.vm-pager {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 10px;
+		padding: 14px 26px 18px;
+		color: var(--muted);
+		font-size: 0.84rem;
+	}
+
+	.vm-pager .pg {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.vm-pager .num {
+		min-width: 34px;
+		height: 34px;
+		border: 1px solid var(--line);
+		border-radius: 10px;
+		background: #fff;
+		color: inherit;
+		font: inherit;
+		cursor: pointer;
+	}
+
+	.vm-pager .num.on {
+		border-color: transparent;
+		background: #25330f;
+		color: #fff;
+	}
+
+	.vm-pager .gap {
+		padding: 0 2px;
+	}
+
+	.vm-empty {
+		display: grid;
+		justify-items: center;
+		gap: 10px;
+		padding: 48px 28px;
+		color: var(--muted);
+		text-align: center;
+	}
+
+	@media (max-width: 720px) {
+		.vm-stats {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+
+		.vm-head,
+		.vm-pager,
+		.vm-stats,
+		.vm-filter {
+			padding-inline: 16px;
+		}
+
+		.vm-table {
+			margin-inline: 16px;
+		}
 	}
 
 	/* ───── Editor layar penuh ───── */

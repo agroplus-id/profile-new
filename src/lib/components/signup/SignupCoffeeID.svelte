@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Swal from 'sweetalert2';
-	import { doc, getDoc } from 'firebase/firestore';
+	import { addDoc, collection, doc, getDoc } from 'firebase/firestore';
+	import { session, whenReady } from '$lib/account/session.svelte';
+	import { displayName } from '$lib/account/account';
 	import { db } from '$lib/firebase';
 	import { normalizeCode } from '$lib/admin/orders';
 	import { PACKAGE_PREFIX, VERIFIED_KEY } from '$lib/batch';
@@ -26,10 +28,44 @@
 				ok =
 					(o.email ?? '').trim().toLowerCase() === email.trim().toLowerCase() &&
 					(o.phone ?? '').replace(/\D/g, '') === phone.replace(/\D/g, '');
-			} else if (await resolvePackage(key)) {
-				// 2) Kode kemasan (tercetak di bungkus): cukup kodenya, tanpa email dan telepon.
-				ok = true;
-				key = PACKAGE_PREFIX + key;
+			} else {
+				const pkg = await resolvePackage(key);
+				if (pkg) {
+					// 2) Kode kemasan (tercetak di bungkus): wajib login; email dan telepon tidak diminta.
+					await whenReady();
+					const user = session.user;
+					if (!user) {
+						isSubmitting = false;
+						const ask = await Swal.fire({
+							icon: 'info',
+							title: 'Sign in to continue',
+							text: 'Please sign in to track a package code. It only takes a moment.',
+							showCancelButton: true,
+							confirmButtonText: 'Sign in',
+							cancelButtonText: 'Not now',
+							confirmButtonColor: '#55683d'
+						});
+						if (ask.isConfirmed) goto(`/login?next=${encodeURIComponent('/supply-verification')}`);
+						return;
+					}
+					// Catat siapa yang membuka kode ini agar admin tahu (gagal mencatat tidak menghalangi pelanggan).
+					try {
+						await addDoc(collection(db, 'scans'), {
+							uid: user.uid,
+							email: (user.email ?? '').toLowerCase(),
+							name: displayName(session.profile) || user.displayName || '',
+							phone: session.profile?.phone ?? '',
+							code: key,
+							batchId: pkg.batchId,
+							itemNumber: pkg.itemNumber,
+							createdAt: new Date().toISOString()
+						});
+					} catch (err) {
+						console.warn('Gagal mencatat verifikasi', err);
+					}
+					ok = true;
+					key = PACKAGE_PREFIX + key;
+				}
 			}
 		} catch (err) {
 			console.warn('Gagal memeriksa pesanan', err);
@@ -80,7 +116,7 @@
 					autocomplete="off"
 				/>
 				<span class="field-hint"
-					>Your order code is in the confirmation email. The package code is printed on the coffee package.</span
+					>Order code (from your confirmation email) needs your email and phone below. A package code (printed on the coffee package) needs you to sign in instead.</span
 				>
 			</div>
 

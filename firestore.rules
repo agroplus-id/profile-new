@@ -57,6 +57,13 @@ service cloud.firestore {
     // Riwayat pengumuman email yang dikirim admin.
     match /broadcasts/{id} { allow read, write: if isAdmin(); }
 
+    // Riwayat verifikasi kode kemasan: pelanggan yang login hanya boleh mencatat atas namanya sendiri;
+    // membaca dan menghapus hanya admin.
+    match /scans/{id} {
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      allow read, delete: if isAdmin();
+    }
+
     // Akun pelanggan: hanya pemiliknya (uid sama) yang boleh membaca/mengubah; admin boleh membaca untuk daftar
     // pelanggan dan pengiriman pengumuman.
     match /users/{uid} {
