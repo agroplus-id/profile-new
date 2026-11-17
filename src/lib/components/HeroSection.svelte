@@ -66,7 +66,7 @@
 		</h1>
 		<div class="cta" style="--d:0.6s">
 			<button use:magneticHover class="video-link" type="button" onclick={playWithSound}>
-				Tonton langsung <span aria-hidden="true">→</span>
+				Watch full video <span aria-hidden="true">→</span>
 			</button>
 		</div>
 	</div>
