@@ -18,8 +18,7 @@
 			items: [
 				{ label: 'AgroCapture', href: '/agro-capture', desc: 'Seeing every coffee field differently' },
 				{ label: 'Ferroir', href: '/ferroir', desc: 'Connected fermentation, thoughtfully designed' },
-				{ label: 'Fermego', href: '/fermego', desc: 'Modern monitoring for familiar fermentation' },
-				{ label: 'Explore the World', href: '/world/index.html', desc: 'Drive through the coffee journey in 3D', reload: true }
+				{ label: 'Fermego', href: '/fermego', desc: 'Modern monitoring for familiar fermentation' }
 			]
 		},
 		{
@@ -181,17 +180,23 @@
 					</li>
 					{@render menuItem(menus[0], 1, 'left')}
 					{@render menuItem(menus[1], 2, 'left')}
+					<li class="vnav-li" style="--i:3">
+						<!-- /world/ adalah folder statis di luar router SvelteKit, jadi dimuat penuh -->
+						<a class="vnav-btn" href="/world/" data-sveltekit-reload>
+							<span class="wipe"></span><span class="txt">Explore the World</span>
+						</a>
+					</li>
 				</ul>
 			</nav>
 
 			<div class="vnav-right">
 				<ul class="vnav-list vnav-list-right">
 					{#each rightMenus as m}
-						{@render menuItem(m, 3, 'right')}
+						{@render menuItem(m, 4, 'right')}
 					{/each}
 					<li
 						class="vnav-li"
-						style="--i:4"
+						style="--i:5"
 						onmouseenter={() => signedIn && hoverOpen('acct')}
 						onmouseleave={hoverClose}
 					>
@@ -277,6 +282,7 @@
 					</div>
 				</div>
 			</div>
+			<a class="m-link" href="/world/" data-sveltekit-reload style="--i:3">Explore the World</a>
 			<!-- Tools -->
 			<div class="m-group" style="--i:4">
 				<button class="m-link m-toggle" onclick={() => toggle('tools')} aria-expanded={open === 'tools'}>
