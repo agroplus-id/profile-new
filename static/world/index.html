@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f0f3f1">
+<title>AgroPlus World — Drive through the coffee journey</title>
+<meta name="description" content="Drive a pick-up through Gunung Kawi and follow coffee from harvest to packaged beans with Ferroir.">
+<link rel="icon" href="./logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script type="module" crossorigin src="./assets/index-DdQqIVSO.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/three-W7TxcVJ2.js">
+  <link rel="modulepreload" crossorigin href="./assets/rapier-D3Mqfikn.js">
+  <link rel="stylesheet" crossorigin href="./assets/index-BpbvjRLr.css">
+</head>
+<body>
+<canvas id="gl"></canvas>
+<div id="flash" class="flash"></div>
+
+<!-- Splash / loader -->
+<div id="splash">
+  <img class="splash-logo" src="./logo.svg" alt="AgroPlus.ID">
+  <p class="kicker">UPSTREAM COFFEE TECHNOLOGY</p>
+  <h1>AgroPlus <em>World</em></h1>
+  <p class="sub">Drive through the foothills of Gunung Kawi and follow a coffee cherry from harvest to packaged beans.</p>
+  <div class="load"><i id="load-fill"></i></div>
+  <button id="start" disabled>Loading…</button>
+  <ul class="keys">
+    <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> / arrows — drive</li>
+    <li><kbd>Space</kbd> — handbrake / drift &nbsp; <kbd>E</kbd> — interact &nbsp; <kbd>H</kbd> — horn &nbsp; <kbd>R</kbd> — reset</li>
+    <li class="touch-only">Touch: joystick to drive, buttons to interact</li>
+  </ul>
+</div>
+
+<!-- HUD -->
+<div id="hud" hidden>
+  <header class="hud-top">
+    <a class="hud-brand" href="https://agroplus.id" target="_blank" rel="noopener"><img src="./logo.svg" alt="AgroPlus.ID"></a>
+    <div class="objective">
+      <ol id="steps"></ol>
+      <p id="obj-text">Drive to the coffee farm</p>
+      <div class="obj-meta"><span id="obj-arrow">➤</span><span id="obj-dist"></span></div>
+    </div>
+    <div class="hud-actions">
+      <button id="btn-env" class="env-pill" aria-label="Time and weather"><span id="env-icon">☀️</span><b id="env-clock">09:12</b></button>
+      <button id="btn-ach" class="icon-btn" aria-label="Achievements" title="Achievements">🏆</button>
+      <button id="btn-set" class="icon-btn" aria-label="Settings" title="Settings">⚙</button>
+      <button id="btn-contact" class="icon-btn" aria-label="Contact AgroPlus" title="Contact AgroPlus">✉</button>
+      <button id="btn-music" class="icon-btn" aria-label="Toggle music" title="Music">♪</button>
+      <button id="btn-help" class="icon-btn" aria-label="Help" title="Help">?</button>
+    </div>
+  </header>
+
+  <div id="env-panel" class="env-panel" hidden>
+    <h4>Time &amp; weather</h4>
+    <label class="env-row"><span>Time</span><input type="range" id="env-time" min="0" max="24" step="0.1"><output id="env-time-o">09:12</output></label>
+    <label class="env-chk"><input type="checkbox" id="env-auto" checked> Day cycle runs</label>
+    <div class="env-w" id="env-w"></div>
+    <label class="env-chk"><input type="checkbox" id="env-autow" checked> Random weather</label>
+  </div>
+
+  <aside id="panel" class="panel" hidden>
+    <p class="p-label" id="p-label"></p>
+    <h2 id="p-title"></h2>
+    <button id="p-action" class="p-action"></button>
+    <button id="p-twin" class="p-action p-twin" hidden>🔬 Explore Ferroir · 3D Digital Twin</button>
+    <p id="p-text"></p>
+    <dl id="p-specs"></dl>
+    <div class="p-links" id="p-links"></div>
+  </aside>
+
+  <div id="progress" class="progress" hidden>
+    <p id="pr-title">Fermenting…</p>
+    <div class="pr-bar"><i id="pr-fill"></i></div>
+    <p id="pr-meta" class="mono"></p>
+  </div>
+
+  <div id="toast" class="toast" hidden><b></b><span></span></div>
+  <canvas id="minimap" class="minimap" width="248" height="212" aria-label="Map"></canvas>
+  <button id="mm-open" class="mm-open" aria-label="Open world map">🗺 Map <kbd>M</kbd></button>
+  <div id="speed" class="speed"><b id="spd">0</b><small>km/h</small></div>
+
+  <!-- Touch controls -->
+  <div id="touch" hidden>
+    <div id="stick"><i id="knob"></i></div>
+    <div class="tbtns">
+      <button id="t-act" class="tbtn act">E</button>
+      <button id="t-horn" class="tbtn">♫</button>
+      <button id="t-brake" class="tbtn">■</button>
+      <button id="t-reset" class="tbtn">↺</button>
+    </div>
+  </div>
+</div>
+
+<div id="twin" hidden></div>
+<div id="sheet" class="sheet" hidden></div>
+
+<div id="help" class="help" hidden>
+  <div class="help-card">
+    <h2>How to play</h2>
+    <p>Follow the beacon. Complete the five phases of the coffee production chain — and bump into the big letters, they are real.</p>
+    <ol>
+      <li><b>Harvest</b> — drive through the farm and collect 10 ripe cherries.</li>
+      <li><b>Ferment</b> — load them into Ferroir.</li>
+      <li><b>Drying</b> — spread the beans on raised beds.</li>
+      <li><b>Roasting</b> — roast to a light profile.</li>
+      <li><b>Packaging</b> — seal your own bag of beans.</li>
+    </ol>
+    <button id="help-close" class="p-action">Got it</button>
+  </div>
+</div>
+
+</body>
+</html>

@@ -6,7 +6,8 @@
 	import { session, logout } from '$lib/account/session.svelte';
 	import { displayName, initialsOf } from '$lib/account/account';
 
-	type Item = { label: string; href: string; desc?: string };
+	// reload: tujuan di luar router SvelteKit (mis. /world/ adalah folder statis), jadi harus memuat halaman penuh.
+	type Item = { label: string; href: string; desc?: string; reload?: boolean };
 	type Menu = { id: string; label: string; items: Item[]; mega?: boolean };
 
 	const menus: Menu[] = [
@@ -17,7 +18,8 @@
 			items: [
 				{ label: 'AgroCapture', href: '/agro-capture', desc: 'Seeing every coffee field differently' },
 				{ label: 'Ferroir', href: '/ferroir', desc: 'Connected fermentation, thoughtfully designed' },
-				{ label: 'Fermego', href: '/fermego', desc: 'Modern monitoring for familiar fermentation' }
+				{ label: 'Fermego', href: '/fermego', desc: 'Modern monitoring for familiar fermentation' },
+				{ label: 'Explore the World', href: '/world/index.html', desc: 'Drive through the coffee journey in 3D', reload: true }
 			]
 		},
 		{
@@ -131,7 +133,7 @@
 			<div class="vnav-dd mega" class:is-open={open === m.id}>
 				<div class="mega-inner">
 					{#each m.items as it, n}
-						<a class="mega-card" href={it.href} style="--n:{n}">
+						<a class="mega-card" href={it.href} data-sveltekit-reload={it.reload ? '' : undefined} style="--n:{n}">
 							<span class="mega-wipe" aria-hidden="true"></span>
 							<strong>{it.label}</strong>
 							{#if it.desc}<p>{it.desc}</p>{/if}
@@ -257,7 +259,7 @@
 				<div class="m-sub" class:is-open={open === 'projects'}>
 					<div>
 						{#each menus[0].items as it}
-							<a href={it.href}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
+							<a href={it.href} data-sveltekit-reload={it.reload ? '' : undefined}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
 						{/each}
 					</div>
 				</div>
@@ -270,7 +272,7 @@
 				<div class="m-sub" class:is-open={open === 'about'}>
 					<div>
 						{#each menus[1].items as it}
-							<a href={it.href}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
+							<a href={it.href} data-sveltekit-reload={it.reload ? '' : undefined}>{it.label}{#if it.desc}<small>{it.desc}</small>{/if}</a>
 						{/each}
 					</div>
 				</div>
